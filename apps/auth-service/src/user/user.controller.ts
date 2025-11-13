@@ -26,8 +26,8 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('profile')
-  @ApiOperation({ summary: 'Lấy thông tin profile của user hiện tại' })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin thành công' })
+  @ApiOperation({ summary: 'Get current user profile information' })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@CurrentUser() user: { id: string }) {
     return this.userService.findById(user.id);
@@ -35,8 +35,8 @@ export class UserController {
 
   @Put('profile')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Cập nhật thông tin profile' })
-  @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
+  @ApiOperation({ summary: 'Update profile information' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateProfile(
     @CurrentUser() user: { id: string },

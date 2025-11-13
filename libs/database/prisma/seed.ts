@@ -3,16 +3,16 @@ import { PrismaClient, RoleName } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Bắt đầu seed database...');
+  console.log('🌱 Starting database seed...');
 
-  // 1. Tạo Roles
-  console.log('📝 Tạo Roles...');
+  // 1. Create Roles
+  console.log('📝 Creating Roles...');
   const adminRole = await prisma.role.upsert({
     where: { name: RoleName.ADMIN },
     update: {},
     create: {
       name: RoleName.ADMIN,
-      description: 'Quản trị viên hệ thống - Toàn quyền truy cập',
+      description: 'System Administrator - Full access',
     },
   });
 
@@ -21,7 +21,7 @@ async function main() {
     update: {},
     create: {
       name: RoleName.INSTRUCTOR,
-      description: 'Giảng viên - Quản lý nội dung và học sinh',
+      description: 'Instructor - Manage content and students',
     },
   });
 
@@ -30,18 +30,18 @@ async function main() {
     update: {},
     create: {
       name: RoleName.STUDENT,
-      description: 'Học sinh - Xem và học nội dung',
+      description: 'Student - View and learn content',
     },
   });
 
-  console.log('✅ Roles đã được tạo:', {
+  console.log('✅ Roles created:', {
     admin: adminRole.id,
     instructor: instructorRole.id,
     student: studentRole.id,
   });
 
-  // 2. Tạo Permissions
-  console.log('🔐 Tạo Permissions...');
+  // 2. Create Permissions
+  console.log('🔐 Creating Permissions...');
   const permissions = [
     // Content Permissions
     { action: 'CREATE', subject: 'CONTENT' },
@@ -77,12 +77,12 @@ async function main() {
     createdPermissions.push(permission);
   }
 
-  console.log(`✅ Đã tạo ${createdPermissions.length} permissions`);
+  console.log(`✅ Created ${createdPermissions.length} permissions`);
 
-  // 3. Gán Permissions cho Roles
-  console.log('🔗 Gán Permissions cho Roles...');
+  // 3. Assign Permissions to Roles
+  console.log('🔗 Assigning Permissions to Roles...');
 
-  // ADMIN: Tất cả permissions
+  // ADMIN: All permissions
   for (const perm of createdPermissions) {
     const permissionId = String(perm.id);
     await prisma.permissionsOnRoles.upsert({
@@ -125,7 +125,7 @@ async function main() {
     });
   }
 
-  // STUDENT: Chỉ READ CONTENT
+  // STUDENT: Only READ CONTENT
   const studentPerms = createdPermissions.filter(
     (p: { subject: string; action: string }) =>
       p.subject === 'CONTENT' && p.action === 'READ',
@@ -147,9 +147,9 @@ async function main() {
     });
   }
 
-  console.log('✅ Đã gán permissions cho các roles');
+  console.log('✅ Assigned permissions to roles');
 
-  // 4. Tạo Admin User mặc định (nếu cần)
+  // 4. Create default Admin User (if needed)
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@ktpm.edu.vn';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -174,18 +174,18 @@ async function main() {
       },
     });
 
-    console.log('✅ Đã tạo Admin user:', adminUser.email);
-    console.log('   Password mặc định:', adminPassword);
+    console.log('✅ Created Admin user:', adminUser.email);
+    console.log('   Default password:', adminPassword);
   } else {
-    console.log('ℹ️  Admin user đã tồn tại:', adminEmail);
+    console.log('ℹ️  Admin user already exists:', adminEmail);
   }
 
-  console.log('🎉 Seed database hoàn tất!');
+  console.log('🎉 Database seed completed!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Lỗi khi seed database:', e);
+    console.error('❌ Error seeding database:', e);
     process.exit(1);
   })
   .finally(async () => {

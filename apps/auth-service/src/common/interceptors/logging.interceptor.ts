@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
 /**
- * Interceptor để log các request (có thể mở rộng để ghi audit log)
+ * Interceptor to log requests (can be extended to write audit logs)
  */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {

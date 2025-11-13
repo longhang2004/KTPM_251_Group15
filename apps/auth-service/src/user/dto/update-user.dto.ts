@@ -3,8 +3,8 @@ import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateUserDto {
   @ApiProperty({
-    description: 'Họ và tên đầy đủ',
-    example: 'Nguyễn Văn A',
+    description: 'Full name',
+    example: 'John Doe',
     required: false,
   })
   @IsString()

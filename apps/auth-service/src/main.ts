@@ -26,13 +26,13 @@ async function bootstrap() {
   // Global Interceptors
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  // CORS (nếu cần)
+  // CORS (if needed)
   app.enableCors();
 
-  // Swagger Setup (Yêu cầu Task 1)
+  // Swagger Setup (Task 1 requirement)
   const config = new DocumentBuilder()
     .setTitle('Auth & User Service (Task 1)')
-    .setDescription('API cho dịch vụ Xác thực và Người dùng (Nhóm 15 KTPM)')
+    .setDescription('API for Authentication and User Service (Group 15 KTPM)')
     .setVersion('1.0')
     .addBearerAuth(
       {
@@ -52,7 +52,7 @@ async function bootstrap() {
 
   const port = process.env.AUTH_SERVICE_PORT || 3001;
   await app.listen(port);
-  console.log(`🚀 Auth Service đang chạy tại: http://localhost:${port}`);
+  console.log(`🚀 Auth Service running at: http://localhost:${port}`);
   console.log(`📚 Swagger UI: http://localhost:${port}/api-docs`);
 }
 void bootstrap();

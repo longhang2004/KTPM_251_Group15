@@ -1,35 +1,35 @@
-# KTPM_251_Group15 - Hệ thống Quản lý Học tập
+# KTPM_251_Group15 - Learning Management System
 
-Dự án backend monorepo cho hệ thống quản lý học tập, được xây dựng với NestJS, TypeScript, PostgreSQL và Prisma.
+Backend monorepo project for a learning management system, built with NestJS, TypeScript, PostgreSQL, and Prisma.
 
-## 📋 Mục lục
+## 📋 Table of Contents
 
-- [Tổng quan](#tổng-quan)
-- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
-- [Cấu trúc dự án](#cấu-trúc-dự-án)
-- [Cài đặt](#cài-đặt)
-- [Cấu hình](#cấu-hình)
-- [Chạy dự án](#chạy-dự-án)
+- [Overview](#overview)
+- [Technologies](#technologies)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the Project](#running-the-project)
 - [API Documentation](#api-documentation)
 - [Testing](#testing)
 - [Database](#database)
 
-## 🎯 Tổng quan
+## 🎯 Overview
 
-Dự án bao gồm 2 microservices:
+The project consists of 2 microservices:
 
-- **auth-service** (Task 1): Dịch vụ xác thực và quản lý người dùng
-  - Đăng ký/Đăng nhập với JWT
-  - Quản lý profile người dùng
-  - Phân quyền RBAC (Role-Based Access Control)
+- **auth-service** (Task 1): Authentication and user management service
+  - Register/Login with JWT
+  - User profile management
+  - RBAC (Role-Based Access Control)
   - Audit logging
 
-- **content-service** (Task 4): Dịch vụ quản lý nội dung học tập
-  - Quản lý nội dung (Lessons, Quizzes, Assignments)
-  - Versioning nội dung
+- **content-service** (Task 4): Learning content management service
+  - Content management (Lessons, Quizzes, Assignments)
+  - Content versioning
   - Tagging system
 
-## 🛠 Công nghệ sử dụng
+## 🛠 Technologies
 
 - **Framework**: NestJS 10.x
 - **Language**: TypeScript 5.7
@@ -40,7 +40,7 @@ Dự án bao gồm 2 microservices:
 - **Validation**: class-validator, class-transformer
 - **Testing**: Jest
 
-## 📁 Cấu trúc dự án
+## 📁 Project Structure
 
 ```
 KTPM_251_Group15/
@@ -76,15 +76,15 @@ KTPM_251_Group15/
 └── tsconfig.json
 ```
 
-## 🚀 Cài đặt
+## 🚀 Installation
 
-### Yêu cầu
+### Requirements
 
 - Node.js >= 18.x
 - PostgreSQL >= 14.x
-- npm hoặc yarn
+- npm or yarn
 
-### Bước 1: Clone và cài đặt dependencies
+### Step 1: Clone and install dependencies
 
 ```bash
 git clone <repository-url>
@@ -92,15 +92,15 @@ cd KTPM_251_Group15
 npm install
 ```
 
-### Bước 2: Cấu hình môi trường
+### Step 2: Environment Configuration
 
-Sao chép file `.env.example` thành `.env`:
+Copy `.env.example` to `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Chỉnh sửa `.env` với thông tin database của bạn:
+Edit `.env` with your database information:
 
 ```env
 DATABASE_URL="postgresql://postgres:password@localhost:5432/ktpm_db"
@@ -108,60 +108,60 @@ JWT_SECRET="your-super-secret-jwt-key-here"
 JWT_EXPIRES_IN="1d"
 ```
 
-### Bước 3: Setup Database
+### Step 3: Database Setup
 
 ```bash
 # Generate Prisma Client
 npm run prisma:generate
 
-# Tạo và chạy migrations
+# Create and run migrations
 npm run prisma:migrate
 
-# Seed database với roles, permissions và admin user
+# Seed database with roles, permissions, and admin user
 npm run prisma:seed
 ```
 
-Hoặc chạy tất cả cùng lúc:
+Or run all at once:
 
 ```bash
 npm run db:setup
 ```
 
-## ⚙️ Cấu hình
+## ⚙️ Configuration
 
 ### Environment Variables
 
-| Biến | Mô tả | Mặc định |
-|------|-------|----------|
+| Variable | Description | Default |
+|----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | - |
-| `JWT_SECRET` | Secret key cho JWT signing | - |
-| `JWT_EXPIRES_IN` | Thời gian hết hạn của JWT token | `1d` |
-| `AUTH_SERVICE_PORT` | Port cho auth-service | `3001` |
-| `CONTENT_SERVICE_PORT` | Port cho content-service | `3002` |
-| `ADMIN_EMAIL` | Email cho admin user mặc định | `admin@ktpm.edu.vn` |
-| `ADMIN_PASSWORD` | Password cho admin user mặc định | `admin123` |
+| `JWT_SECRET` | Secret key for JWT signing | - |
+| `JWT_EXPIRES_IN` | JWT token expiration time | `1d` |
+| `AUTH_SERVICE_PORT` | Port for auth-service | `3001` |
+| `CONTENT_SERVICE_PORT` | Port for content-service | `3002` |
+| `ADMIN_EMAIL` | Email for default admin user | `admin@ktpm.edu.vn` |
+| `ADMIN_PASSWORD` | Password for default admin user | `admin123` |
 
-## 🏃 Chạy dự án
+## 🏃 Running the Project
 
 ### Development Mode
 
-#### Chạy Auth Service
+#### Run Auth Service
 
 ```bash
 npm run start:auth
 ```
 
-Service sẽ chạy tại: http://localhost:3001
+Service will run at: http://localhost:3001
 
-#### Chạy Content Service
+#### Run Content Service
 
 ```bash
 npm run start:content
 ```
 
-Service sẽ chạy tại: http://localhost:3002
+Service will run at: http://localhost:3002
 
-#### Chạy cả hai services (cần terminal riêng)
+#### Run both services (requires separate terminals)
 
 ```bash
 # Terminal 1
@@ -185,7 +185,7 @@ npm run start:prod
 
 ### Auth Service Swagger UI
 
-Sau khi chạy auth-service, truy cập:
+After running auth-service, access:
 
 http://localhost:3001/api-docs
 
@@ -193,17 +193,17 @@ http://localhost:3001/api-docs
 
 #### Authentication
 
-- `POST /api/v1/auth/register` - Đăng ký tài khoản mới
-- `POST /api/v1/auth/login` - Đăng nhập
+- `POST /api/v1/auth/register` - Register new account
+- `POST /api/v1/auth/login` - Login
 
 #### User Profile
 
-- `GET /api/v1/user/profile` - Lấy thông tin profile (cần JWT)
-- `PUT /api/v1/user/profile` - Cập nhật profile (cần JWT)
+- `GET /api/v1/user/profile` - Get profile information (requires JWT)
+- `PUT /api/v1/user/profile` - Update profile (requires JWT)
 
-### Ví dụ sử dụng API
+### API Usage Examples
 
-#### Đăng ký
+#### Register
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/auth/register \
@@ -211,11 +211,11 @@ curl -X POST http://localhost:3001/api/v1/auth/register \
   -d '{
     "email": "user@example.com",
     "password": "password123",
-    "fullName": "Nguyễn Văn A"
+    "fullName": "John Doe"
   }'
 ```
 
-#### Đăng nhập
+#### Login
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/auth/login \
@@ -233,7 +233,7 @@ Response:
 }
 ```
 
-#### Lấy profile (với JWT)
+#### Get Profile (with JWT)
 
 ```bash
 curl -X GET http://localhost:3001/api/v1/user/profile \
@@ -264,13 +264,13 @@ npm run test:e2e
 # Generate Prisma Client
 npm run prisma:generate
 
-# Tạo migration mới
+# Create new migration
 npm run prisma:migrate
 
 # Deploy migrations (production)
 npm run prisma:migrate:deploy
 
-# Mở Prisma Studio (GUI để xem DB)
+# Open Prisma Studio (GUI to view DB)
 npm run prisma:studio
 
 # Seed database
@@ -279,22 +279,22 @@ npm run prisma:seed
 
 ### Database Schema
 
-Xem chi tiết schema tại: `libs/database/prisma/schema.prisma`
+View detailed schema at: `libs/database/prisma/schema.prisma`
 
-#### Các Models chính:
+#### Main Models:
 
-- **User**: Người dùng hệ thống
-- **Role**: Vai trò (ADMIN, INSTRUCTOR, STUDENT)
-- **Permission**: Quyền hạn
-- **Content**: Nội dung học tập
-- **AuditLog**: Nhật ký kiểm toán
-- **RefreshToken**: Token làm mới
+- **User**: System users
+- **Role**: Roles (ADMIN, INSTRUCTOR, STUDENT)
+- **Permission**: Permissions
+- **Content**: Learning content
+- **AuditLog**: Audit trail
+- **RefreshToken**: Refresh token
 
 ## 🔐 Authentication & Authorization
 
 ### JWT Authentication
 
-Tất cả các endpoint được bảo vệ yêu cầu JWT token trong header:
+All protected endpoints require JWT token in header:
 
 ```
 Authorization: Bearer <token>
@@ -302,7 +302,7 @@ Authorization: Bearer <token>
 
 ### Role-Based Access Control (RBAC)
 
-Sử dụng decorator `@Roles()` và `RolesGuard`:
+Use `@Roles()` decorator and `RolesGuard`:
 
 ```typescript
 @Roles(RoleName.ADMIN, RoleName.INSTRUCTOR)
@@ -315,7 +315,7 @@ async protectedRoute() {
 
 ### Audit Logging
 
-Mọi hành động quan trọng được ghi vào `AuditLog`:
+All important actions are logged to `AuditLog`:
 
 ```typescript
 await auditLogService.log(
@@ -326,31 +326,31 @@ await auditLogService.log(
 );
 ```
 
-## 📝 Scripts hữu ích
+## 📝 Useful Scripts
 
-| Script | Mô tả |
-|--------|-------|
-| `npm run start:auth` | Chạy auth-service (watch mode) |
-| `npm run start:content` | Chạy content-service (watch mode) |
+| Script | Description |
+|--------|-------------|
+| `npm run start:auth` | Run auth-service (watch mode) |
+| `npm run start:content` | Run content-service (watch mode) |
 | `npm run db:setup` | Setup database (generate + migrate + seed) |
-| `npm run prisma:studio` | Mở Prisma Studio GUI |
-| `npm run lint` | Chạy ESLint và tự động fix |
-| `npm run format` | Format code với Prettier |
+| `npm run prisma:studio` | Open Prisma Studio GUI |
+| `npm run lint` | Run ESLint and auto-fix |
+| `npm run format` | Format code with Prettier |
 
-## 🤝 Đóng góp
+## 🤝 Contributing
 
-1. Fork dự án
-2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
+1. Fork the project
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Mở Pull Request
+5. Open Pull Request
 
 ## 📄 License
 
 UNLICENSED
 
-## 👥 Nhóm 15 - KTPM 251
+## 👥 Group 15 - KTPM 251
 
 ---
 
-**Lưu ý**: Đảm bảo PostgreSQL đang chạy trước khi start services. Xem thêm `SETUP.md` để biết chi tiết.
+**Note**: Ensure PostgreSQL is running before starting services. See `SETUP.md` for more details.

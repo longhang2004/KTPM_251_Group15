@@ -17,16 +17,16 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    // Kiểm tra email đã tồn tại chưa
+    // Check if email already exists
     const existingUser = await this.userService.findByEmail(dto.email);
     if (existingUser) {
-      throw new ConflictException('Email đã được sử dụng');
+      throw new ConflictException('Email already in use');
     }
 
-    // Hash mật khẩu
+    // Hash password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // Tạo user mới
+    // Create new user
     const user = await this.userService.create({
       email: dto.email,
       password: hashedPassword,
@@ -37,22 +37,22 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    // Tìm user bằng email
+    // Find user by email
     const user = await this.userService.findByEmail(dto.email);
     if (!user) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Kiểm tra mật khẩu
+    // Verify password
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Tạo JWT payload
+    // Create JWT payload
     const payload = { sub: user.id, email: user.email };
 
-    // Ký token
+    // Sign token
     const access_token = await this.jwtService.signAsync(payload);
 
     return {
@@ -63,9 +63,9 @@ export class AuthService {
   async validateUser(payload: { sub: string; email?: string }) {
     const user = await this.userService.findById(payload.sub);
     if (!user) {
-      throw new UnauthorizedException('Người dùng không tồn tại');
+      throw new UnauthorizedException('User not found');
     }
-    // Trả về user với roles để JWT strategy có thể sử dụng
+    // Return user with roles for JWT strategy to use
     return user;
   }
 }

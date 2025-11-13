@@ -1,8 +1,8 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 /**
- * Decorator để lấy thông tin user hiện tại từ JWT token
- * Sử dụng: @CurrentUser() user
+ * Decorator to get current user information from JWT token
+ * Usage: @CurrentUser() user
  */
 export const CurrentUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {

@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: { sub: string; email?: string }) {
     const user = await this.authService.validateUser(payload);
-    // Trả về user với roles để RolesGuard có thể sử dụng
+    // Return user with roles for RolesGuard to use
     return user;
   }
 }

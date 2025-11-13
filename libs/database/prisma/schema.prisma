@@ -21,7 +21,7 @@ model User {
   
   roles RolesOnUsers[]
   
-  // Quan hệ với Content (Task 4)
+  // Relation to Content (Task 4)
   createdContents Content[] @relation("CreatedBy")
   auditLogs       AuditLog[]
   refreshTokens   RefreshToken[]
@@ -35,7 +35,7 @@ enum RoleName {
 
 model Role {
   id          String   @id @default(uuid())
-  name        RoleName @unique // Giá trị hợp lệ: ADMIN, INSTRUCTOR, STUDENT
+  name        RoleName @unique // Valid values: ADMIN, INSTRUCTOR, STUDENT
   description String?
   
   users       RolesOnUsers[]
@@ -44,8 +44,8 @@ model Role {
 
 model Permission {
   id          String   @id @default(uuid())
-  action      String   // Ví dụ: "CREATE", "READ", "UPDATE", "DELETE"
-  subject     String   // Ví dụ: "CONTENT", "USER"
+  action      String   // Example: "CREATE", "READ", "UPDATE", "DELETE"
+  subject     String   // Example: "CONTENT", "USER"
   description String?
   
   roles PermissionsOnRoles[]
@@ -53,7 +53,7 @@ model Permission {
   @@unique([action, subject])
 }
 
-// Bảng trung gian
+// Junction table
 model RolesOnUsers {
   user   User   @relation(fields: [userId], references: [id])
   userId String

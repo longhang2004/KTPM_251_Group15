@@ -7,11 +7,11 @@ export class AuditLogService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Ghi lại một hành động vào audit log
-   * @param userId ID của user thực hiện hành động
-   * @param action Hành động (ví dụ: 'UPDATE_CONTENT', 'OVERRIDE_PATHWAY')
-   * @param subject Đối tượng bị tác động (ví dụ: 'CONTENT_ID_123')
-   * @param details Chi tiết thay đổi (dạng JSON)
+   * Log an action to audit log
+   * @param userId ID of user performing the action
+   * @param action Action (e.g., 'UPDATE_CONTENT', 'OVERRIDE_PATHWAY')
+   * @param subject Subject being affected (e.g., 'CONTENT_ID_123')
+   * @param details Change details (JSON format)
    */
   async log(
     userId: string,
@@ -30,7 +30,7 @@ export class AuditLogService {
   }
 
   /**
-   * Lấy audit logs theo user
+   * Get audit logs by user
    */
   async findByUserId(userId: string) {
     return this.prisma.auditLog.findMany({
@@ -49,7 +49,7 @@ export class AuditLogService {
   }
 
   /**
-   * Lấy audit logs theo subject (đối tượng bị tác động)
+   * Get audit logs by subject (affected object)
    */
   async findBySubject(subject: string) {
     return this.prisma.auditLog.findMany({

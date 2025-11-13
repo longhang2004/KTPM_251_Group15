@@ -14,7 +14,7 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!requiredRoles) {
-      return true; // Không yêu cầu role cụ thể
+      return true; // No specific role required
     }
 
     const request = context.switchToHttp().getRequest<{
@@ -28,7 +28,7 @@ export class RolesGuard implements CanActivate {
       return false;
     }
 
-    // Kiểm tra xem user có role nào trong danh sách requiredRoles không
+    // Check if user has any role in the requiredRoles list
     const userRoles = user.roles.map(
       (roleOnUser: { role: { name: RoleName } }) => roleOnUser.role.name,
     );

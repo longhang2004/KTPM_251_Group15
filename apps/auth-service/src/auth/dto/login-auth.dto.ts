@@ -3,18 +3,18 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({
-    description: 'Email của người dùng',
+    description: 'User email',
     example: 'user@example.com',
   })
-  @IsEmail({}, { message: 'Email không hợp lệ' })
-  @IsNotEmpty({ message: 'Email là bắt buộc' })
+  @IsEmail({}, { message: 'Invalid email format' })
+  @IsNotEmpty({ message: 'Email is required' })
   email: string;
 
   @ApiProperty({
-    description: 'Mật khẩu',
+    description: 'Password',
     example: 'password123',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Mật khẩu là bắt buộc' })
+  @IsNotEmpty({ message: 'Password is required' })
   password: string;
 }
