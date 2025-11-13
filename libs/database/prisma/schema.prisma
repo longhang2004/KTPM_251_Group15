@@ -1,0 +1,147 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Task 1: Auth & User Schema ---
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  fullName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  roles RolesOnUsers[]
+  
+  // Quan hệ với Content (Task 4)
+  createdContents Content[] @relation("CreatedBy")
+  auditLogs       AuditLog[]
+  refreshTokens   RefreshToken[]
+}
+
+enum RoleName {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        RoleName @unique // Giá trị hợp lệ: ADMIN, INSTRUCTOR, STUDENT
+  description String?
+  
+  users       RolesOnUsers[]
+  permissions PermissionsOnRoles[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  action      String   // Ví dụ: "CREATE", "READ", "UPDATE", "DELETE"
+  subject     String   // Ví dụ: "CONTENT", "USER"
+  description String?
+  
+  roles PermissionsOnRoles[]
+  
+  @@unique([action, subject])
+}
+
+// Bảng trung gian
+model RolesOnUsers {
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  role   Role   @relation(fields: [roleId], references: [id])
+  roleId String
+  
+  @@id([userId, roleId])
+}
+
+model PermissionsOnRoles {
+  role         Role       @relation(fields: [roleId], references: [id])
+  roleId       String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  permissionId String
+  
+  @@id([roleId, permissionId])
+}
+
+// --- Task 4: Content Management Schema ---
+model Content {
+  id          String    @id @default(uuid())
+  title       String
+  body        String?
+  contentType String    // "LESSON", "QUIZ", "ASSIGNMENT"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  authorId    String
+  author      User      @relation("CreatedBy", fields: [authorId], references: [id])
+  
+  versions    ContentVersion[]
+  tags        TagsOnContents[]
+}
+
+model ContentVersion {
+  id        String   @id @default(uuid())
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id])
+  version   Int
+  title     String
+  body      String?
+  createdAt DateTime @default(now())
+  
+  @@unique([contentId, version])
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  contents  TagsOnContents[]
+}
+
+model TagsOnContents {
+  content   Content @relation(fields: [contentId], references: [id])
+  contentId String
+  tag       Tag     @relation(fields: [tagId], references: [id])
+  tagId     String
+  
+  @@id([contentId, tagId])
+}
+
+// --- Cross-cutting: Audit Logging ---
+model AuditLog {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+  action    String
+  subject   String
+  details   Json?
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([timestamp])
+}
+
+// --- Auth: Refresh Token Support ---
+model RefreshToken {
+  id           String   @id @default(uuid())
+  hashedToken  String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  revokedAt    DateTime?
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
