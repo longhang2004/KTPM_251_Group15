@@ -24,11 +24,11 @@
     "prisma:migrate": "prisma migrate dev --name init --schema=libs/database/prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema=libs/database/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=libs/database/prisma/schema.prisma",
-    "prisma:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' libs/database/prisma/seed.ts",
+    "prisma:seed": "ts-node libs/database/prisma/seed.ts",
     "db:setup": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed"
   },
   "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} libs/database/prisma/seed.ts"
+    "seed": "ts-node libs/database/prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",
