@@ -5,9 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
 import { UserService } from '../user/user.service';
+import { HashService } from './services/hash.service';
+import { CryptoService } from './services/crypto.service';
 import { RegisterDto } from './dto/register-auth.dto';
 import { LoginDto } from './dto/login-auth.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -20,6 +20,8 @@ export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
+    private hashService: HashService,
+    private cryptoService: CryptoService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -30,7 +32,7 @@ export class AuthService {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const hashedPassword = await this.hashService.hash(dto.password, 10);
 
     // Create new user
     const user = await this.userService.create({
@@ -39,7 +41,24 @@ export class AuthService {
       fullName: dto.fullName,
     });
 
-    return user;
+    // Create JWT payload
+    const payload = { sub: user.id, email: user.email };
+
+    // Sign tokens
+    const access_token = await this.jwtService.signAsync(payload);
+    const refresh_token = await this.jwtService.signAsync(payload, {
+      expiresIn: '7d',
+    });
+
+    return {
+      access_token,
+      refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+      },
+    };
   }
 
   async login(dto: LoginDto) {
@@ -49,8 +68,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+    // Check password
+    const isPasswordValid = await this.hashService.compare(
+      dto.password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -67,6 +89,11 @@ export class AuthService {
     return {
       access_token,
       refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+      },
     };
   }
 
@@ -100,7 +127,7 @@ export class AuthService {
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(
+    const isCurrentPasswordValid = await this.hashService.compare(
       changePasswordDto.currentPassword,
       user.password,
     );
@@ -110,7 +137,7 @@ export class AuthService {
     }
 
     // Hash new password
-    const hashedNewPassword = await bcrypt.hash(
+    const hashedNewPassword = await this.hashService.hash(
       changePasswordDto.newPassword,
       10,
     );
@@ -129,7 +156,7 @@ export class AuthService {
     }
 
     // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetToken = this.cryptoService.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
 
     // Save reset token to user
@@ -157,7 +184,10 @@ export class AuthService {
     }
 
     // Hash new password
-    const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
+    const hashedPassword = await this.hashService.hash(
+      resetPasswordDto.newPassword,
+      10,
+    );
 
     // Update password and clear reset token
     await this.userService.resetPassword(user.id, hashedPassword);
