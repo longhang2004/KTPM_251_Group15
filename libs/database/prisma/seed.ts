@@ -1,4 +1,4 @@
-import { PrismaClient, RoleName } from '@prisma/client';
+import { PrismaClient, RoleName, Permission } from '@prisma/client'; // [FIX] Thêm import Permission
 
 const prisma = new PrismaClient();
 
@@ -56,9 +56,20 @@ async function main() {
     // Override Permissions
     { action: 'OVERRIDE', subject: 'PATHWAY' },
     { action: 'INTERVENE', subject: 'FEEDBACK' },
+    
+    // --- BỔ SUNG CHO TASK CỦA BẠN (QUAN TRỌNG) ---
+    // Quyền để quản lý Role và Permission (RBAC)
+    { action: 'CREATE', subject: 'ROLE' },
+    { action: 'READ', subject: 'ROLE' },
+    { action: 'UPDATE', subject: 'ROLE' },
+    { action: 'DELETE', subject: 'ROLE' },
+    { action: 'GRANT', subject: 'ROLE' },  
+    { action: 'REVOKE', subject: 'ROLE' }, 
   ];
 
-  const createdPermissions = [];
+  // [FIX] Khai báo kiểu mảng rõ ràng để tránh lỗi TS2345
+  const createdPermissions: Permission[] = []; 
+
   for (const perm of permissions) {
     const permission = await prisma.permission.upsert({
       where: {
@@ -84,6 +95,7 @@ async function main() {
 
   // ADMIN: All permissions
   for (const perm of createdPermissions) {
+    // [FIX] Ép kiểu String để chắc chắn
     const permissionId = String(perm.id);
     await prisma.permissionsOnRoles.upsert({
       where: {
@@ -102,7 +114,7 @@ async function main() {
 
   // INSTRUCTOR: Content + Override + Intervene
   const instructorPerms = createdPermissions.filter(
-    (p: { subject: string; action: string }) =>
+    (p) =>
       p.subject === 'CONTENT' ||
       p.action === 'OVERRIDE' ||
       p.action === 'INTERVENE' ||
@@ -127,8 +139,7 @@ async function main() {
 
   // STUDENT: Only READ CONTENT
   const studentPerms = createdPermissions.filter(
-    (p: { subject: string; action: string }) =>
-      p.subject === 'CONTENT' && p.action === 'READ',
+    (p) => p.subject === 'CONTENT' && p.action === 'READ',
   );
   for (const perm of studentPerms) {
     const permissionId = String(perm.id);
@@ -149,7 +160,7 @@ async function main() {
 
   console.log('✅ Assigned permissions to roles');
 
-  // 4. Create default Admin User (if needed)
+  // 4. Create default Admin User
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@ktpm.edu.vn';
   const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -158,6 +169,7 @@ async function main() {
   });
 
   if (!existingAdmin) {
+    // Dynamic import bcrypt to avoid build issues if not used elsewhere
     const bcrypt = await import('bcrypt');
     const hashedPassword = await bcrypt.default.hash(adminPassword, 10);
 
