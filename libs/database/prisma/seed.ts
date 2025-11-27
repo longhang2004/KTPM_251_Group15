@@ -58,7 +58,7 @@ async function main() {
     { action: 'INTERVENE', subject: 'FEEDBACK' },
   ];
 
-  const createdPermissions = [];
+  const createdPermissions: Array<{ id: string; action: string; subject: string }> = [];
   for (const perm of permissions) {
     const permission = await prisma.permission.upsert({
       where: {
