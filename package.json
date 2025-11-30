@@ -28,7 +28,7 @@
     "db:setup": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed"
   },
   "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} libs/database/prisma/seed.ts"
+    "seed": "ts-node libs/database/prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

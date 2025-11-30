@@ -1,4 +1,4 @@
-import { PrismaClient, RoleName, Permission } from '@prisma/client';
+import { Permission, PrismaClient, RoleName } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -58,7 +58,7 @@ async function main() {
     { action: 'INTERVENE', subject: 'FEEDBACK' },
   ];
 
-  const createdPermissions: Permission [] = [];
+  const createdPermissions: Permission[] = [];
   for (const perm of permissions) {
     const permission = await prisma.permission.upsert({
       where: {
