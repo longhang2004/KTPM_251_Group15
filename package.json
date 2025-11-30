@@ -24,7 +24,7 @@
     "prisma:migrate": "prisma migrate dev --name init --schema=libs/database/prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema=libs/database/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=libs/database/prisma/schema.prisma",
-    "prisma:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' libs/database/prisma/seed.ts",
+    "prisma:seed": "ts-node libs/database/prisma/seed.ts",
     "db:setup": "npm run prisma:generate && npm run prisma:migrate && npm run prisma:seed"
   },
   "prisma": {
@@ -35,6 +35,7 @@
     "@nestjs/config": "^3.2.3",
     "@nestjs/core": "^10.3.0",
     "@nestjs/jwt": "^10.2.0",
+    "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^10.0.2",
     "@nestjs/platform-express": "^10.3.0",
     "@nestjs/swagger": "^8.0.5",
