@@ -8,11 +8,13 @@ import { ContentService } from './content.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
+import { AttachTagsDto } from './dto/attach-tags.dto';
 
 import { JwtAuthGuard } from '../common/auth/jwt-auth.guard';
 //---PERMISSION
 import { PermissionsGuard } from '../common/authorization/permissions.guard';
 import { RequirePermissions } from '../common/authorization/permissions.decorator';
+import { domainToUnicode } from 'url';
 
 @ApiTags('Content Management')
 @ApiBearerAuth('JWT-auth')
@@ -88,4 +90,5 @@ export class ContentController {
   restore(@Param('id') id: string) {
     return this.contentService.restore(id);
   }
+
 }
