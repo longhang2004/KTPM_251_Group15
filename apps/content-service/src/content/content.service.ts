@@ -2,14 +2,22 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '@app/database';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
+import { VersioningService } from './versioning.service';
+import { TaggingService } from './tagging.service';
+import { NONAME } from 'dns';
+import { verify } from 'crypto';
 
 @Injectable()
 export class ContentService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private versioning: VersioningService,
+        private tagging: TaggingService,
+    ) {}
 
     async create(dto: CreateContentDto, authorId: string) {
         try {
-            return await this.prisma.content.create({
+            const con = await this.prisma.content.create({
                 data: {
                     title: dto.title,
                     body: dto.body ?? null,
@@ -20,6 +28,17 @@ export class ContentService {
                     },
                 },
             });
+
+            await this.versioning.createSnapshot(
+                con.id,         // contentId
+                con,            // content
+                1,    // version
+                dto.title,      // title
+                dto.body        // body
+            );
+
+            return con;
+
         } catch (err) {
             console.error('Create error:', err);
             throw new BadRequestException('Cannot create content');
@@ -70,4 +89,102 @@ export class ContentService {
             data: { isArchived: false, archivedAt: null },
         });
     }
+
+
+    async list(tag?: string) {
+        if (!tag) {
+            const cons = await this.
+                prisma.content.findMany({ 
+                    include: { 
+                        tags: { 
+                            include: { 
+                                tag: true 
+                            } 
+                        } 
+                    } 
+                });
+            return cons.map(d => ({
+                 ...d, 
+                 tags: d.tags.map(dt => dt.tag.name) 
+                }));
+        }
+
+        const tagObj = await this
+            .prisma.tag.findUnique({ where: { name: tag } });
+
+        if (!tagObj) return [];
+
+        const conTags = await this
+            .prisma.tagsOnContents.findMany({ 
+                where: { tagId: tagObj.id }, 
+                include: { content: true } 
+            });
+
+        return conTags.map(dt => dt.content);
+    }
+
+    async getTag(id: string) {
+        const con = await this
+            .prisma.content.findUnique({ 
+                where: { id }, 
+                include: { 
+                    versions: { 
+                        orderBy: { createdAt: 'desc' } 
+                    }, 
+                    tags: { 
+                        include: { tag: true } 
+                    } 
+                } 
+            });
+        if (!con) throw new NotFoundException('Content not found');
+        return { ...con, tags: con.tags.map(dt => dt.tag.name) };
+    }
+
+    async listVersions(id: string) {
+        return this.prisma.contentVersion.findMany({ 
+            where: { contentId: id },
+            orderBy: { createdAt: 'desc' } 
+        });
+    }
+
+    async restoreVersion(dto: CreateContentDto, id: string, versionId: string) {
+        const con = await this
+            .prisma.content.findUnique({ where: { id } });
+        const ver = await this
+            .prisma.contentVersion.findUnique({ where: { id: versionId } });
+
+        if (!con || !ver || ver.contentId !== id) 
+            throw new NotFoundException('Content or Version not found');
+
+        // snapshot current
+        await this.versioning.createSnapshot(
+            id,             // contentId
+            con,            // content
+            ver.version,    // version
+            con.title,      // title
+            dto.body        // body
+        );
+
+        const updated = await this
+            .prisma.content.update({ 
+                where: { id }, 
+                data: { 
+                    id: ver.contentId,
+                    title: ver.title
+                } 
+            });
+        return updated;
+    }
+
+    async attachTags(id: string, tags: string[]) {
+        const con = await this
+            .prisma.content.findUnique({ where: { id } });
+        if (!con) throw new NotFoundException('Document not found');
+        return this.tagging.attachToContent(id, tags);
+    }
+
+    async detachTag(id: string, tagName: string) {
+        return this.tagging.detachFromContent(id, tagName);
+    }
+
 }
