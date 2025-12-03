@@ -38,6 +38,50 @@ export class UserService {
     return result;
   }
 
+  async findByIdWithPassword(id: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+    });
+  }
+
+  async findByResetToken(resetToken: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: { resetToken },
+    });
+  }
+
+  async updatePassword(id: string, password: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { password },
+    });
+  }
+
+  async updateResetToken(
+    id: string,
+    resetToken: string,
+    resetTokenExpiry: Date,
+  ): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        resetToken,
+        resetTokenExpiry,
+      },
+    });
+  }
+
+  async resetPassword(id: string, password: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        password,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+  }
+
   async update(
     id: string,
     data: Prisma.UserUpdateInput,
