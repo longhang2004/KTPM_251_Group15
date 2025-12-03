@@ -8,6 +8,10 @@ import {
 import { PrismaService } from '@app/database';
 import { FilesService } from '../files/files.service';
 import {
+  VersioningService,
+  ContentSnapshot,
+} from '../content/versioning.service';
+import {
   CreateContentV2Dto,
   UpdateContentV2Dto,
   ContentV2ResponseDto,
@@ -16,7 +20,6 @@ import {
   ContentStatusV2,
 } from './dto';
 import { ResponseDto } from '../common/dto/reponse.dto';
-import { File } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 
 @Injectable()
@@ -26,6 +29,7 @@ export class ContentV2Service {
   constructor(
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
+    private readonly versioningService: VersioningService,
   ) {}
 
   /**
@@ -118,6 +122,35 @@ export class ContentV2Service {
             },
           });
         }
+
+        // Create version 1 with initial snapshot
+        const snapshot: ContentSnapshot = {
+          title: content.title,
+          body: content.body,
+          contentType: content.contentType,
+          resourceUrl: null,
+          hierarchyId: null,
+          metadata: createContentDto.metadata
+            ? {
+                subject: createContentDto.metadata.subject || null,
+                topic: createContentDto.metadata.topic || null,
+                difficulty: createContentDto.metadata.difficulty || null,
+                duration: createContentDto.metadata.duration || null,
+                prerequisites: createContentDto.metadata.prerequisites || null,
+              }
+            : null,
+          tags: [],
+        };
+
+        await tx.contentVersion.create({
+          data: {
+            contentId: content.id,
+            version: 1,
+            snapshot: snapshot as any,
+            changeNote: 'Initial creation',
+            createdBy: createContentDto.createdBy,
+          },
+        });
 
         return content;
       });
@@ -405,6 +438,52 @@ export class ContentV2Service {
           }
         }
 
+        // Get next version number and create snapshot
+        const lastVersion = await tx.contentVersion.findFirst({
+          where: { contentId: id },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+        const nextVersion = (lastVersion?.version ?? 0) + 1;
+
+        // Build snapshot of updated content
+        const updatedContentWithRelations = await tx.content.findUnique({
+          where: { id },
+          include: {
+            metadata: true,
+            tags: { include: { tag: true } },
+          },
+        });
+
+        const snapshot: ContentSnapshot = {
+          title: updatedContentWithRelations!.title,
+          body: updatedContentWithRelations!.body,
+          contentType: updatedContentWithRelations!.contentType,
+          resourceUrl: updatedContentWithRelations!.resourceUrl,
+          hierarchyId: updatedContentWithRelations!.hierarchyId,
+          metadata: updatedContentWithRelations!.metadata
+            ? {
+                subject: updatedContentWithRelations!.metadata.subject,
+                topic: updatedContentWithRelations!.metadata.topic,
+                difficulty: updatedContentWithRelations!.metadata.difficulty,
+                duration: updatedContentWithRelations!.metadata.duration,
+                prerequisites: updatedContentWithRelations!.metadata.prerequisites,
+              }
+            : null,
+          tags: updatedContentWithRelations!.tags.map((t) => t.tag.name),
+        };
+
+        // Create new version
+        await tx.contentVersion.create({
+          data: {
+            contentId: id,
+            version: nextVersion,
+            snapshot: snapshot as any,
+            changeNote: 'Content updated',
+            createdBy: null, // Could be passed from JWT
+          },
+        });
+
         return content;
       });
 
@@ -434,12 +513,16 @@ export class ContentV2Service {
   }
 
   /**
-   * Archive content (soft delete)
+   * Archive content (soft delete) - saves version before archiving
    */
   async archiveContent(id: string): Promise<ResponseDto<null>> {
     try {
       const existingContent = await this.prisma.content.findUnique({
         where: { id },
+        include: {
+          metadata: true,
+          tags: { include: { tag: true } },
+        },
       });
 
       if (!existingContent) {
@@ -450,12 +533,54 @@ export class ContentV2Service {
         throw new BadRequestException('Content is already archived');
       }
 
-      await this.prisma.content.update({
-        where: { id },
-        data: {
-          isArchived: true,
-          archivedAt: new Date(),
-        },
+      // Use transaction to ensure data consistency
+      await this.prisma.$transaction(async (tx) => {
+        // Get next version number
+        const lastVersion = await tx.contentVersion.findFirst({
+          where: { contentId: id },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+        const nextVersion = (lastVersion?.version ?? 0) + 1;
+
+        // Build snapshot before archiving
+        const snapshot: ContentSnapshot = {
+          title: existingContent.title,
+          body: existingContent.body,
+          contentType: existingContent.contentType,
+          resourceUrl: existingContent.resourceUrl,
+          hierarchyId: existingContent.hierarchyId,
+          metadata: existingContent.metadata
+            ? {
+                subject: existingContent.metadata.subject,
+                topic: existingContent.metadata.topic,
+                difficulty: existingContent.metadata.difficulty,
+                duration: existingContent.metadata.duration,
+                prerequisites: existingContent.metadata.prerequisites,
+              }
+            : null,
+          tags: existingContent.tags.map((t) => t.tag.name),
+        };
+
+        // Create version snapshot before archive
+        await tx.contentVersion.create({
+          data: {
+            contentId: id,
+            version: nextVersion,
+            snapshot: snapshot as any,
+            changeNote: 'Archived',
+            createdBy: null,
+          },
+        });
+
+        // Archive content
+        await tx.content.update({
+          where: { id },
+          data: {
+            isArchived: true,
+            archivedAt: new Date(),
+          },
+        });
       });
 
       return new ResponseDto({
@@ -479,12 +604,16 @@ export class ContentV2Service {
   }
 
   /**
-   * Restore archived content
+   * Restore archived content - creates a new version
    */
   async restoreContent(id: string): Promise<ResponseDto<ContentV2ResponseDto>> {
     try {
       const existingContent = await this.prisma.content.findUnique({
         where: { id },
+        include: {
+          metadata: true,
+          tags: { include: { tag: true } },
+        },
       });
 
       if (!existingContent) {
@@ -495,12 +624,54 @@ export class ContentV2Service {
         throw new BadRequestException('Content is not archived');
       }
 
-      const restoredContent = await this.prisma.content.update({
-        where: { id },
-        data: {
-          isArchived: false,
-          archivedAt: null,
-        },
+      // Use transaction to ensure data consistency
+      const restoredContent = await this.prisma.$transaction(async (tx) => {
+        // Get next version number
+        const lastVersion = await tx.contentVersion.findFirst({
+          where: { contentId: id },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+        const nextVersion = (lastVersion?.version ?? 0) + 1;
+
+        // Build snapshot
+        const snapshot: ContentSnapshot = {
+          title: existingContent.title,
+          body: existingContent.body,
+          contentType: existingContent.contentType,
+          resourceUrl: existingContent.resourceUrl,
+          hierarchyId: existingContent.hierarchyId,
+          metadata: existingContent.metadata
+            ? {
+                subject: existingContent.metadata.subject,
+                topic: existingContent.metadata.topic,
+                difficulty: existingContent.metadata.difficulty,
+                duration: existingContent.metadata.duration,
+                prerequisites: existingContent.metadata.prerequisites,
+              }
+            : null,
+          tags: existingContent.tags.map((t) => t.tag.name),
+        };
+
+        // Create version snapshot for restore action
+        await tx.contentVersion.create({
+          data: {
+            contentId: id,
+            version: nextVersion,
+            snapshot: snapshot as any,
+            changeNote: 'Restored from archive',
+            createdBy: null,
+          },
+        });
+
+        // Restore content
+        return tx.content.update({
+          where: { id },
+          data: {
+            isArchived: false,
+            archivedAt: null,
+          },
+        });
       });
 
       // Fetch complete content with relations

@@ -156,11 +156,14 @@ model ContentVersion {
   contentId String
   content   Content  @relation(fields: [contentId], references: [id])
   version   Int
-  title     String
-  body      String?
+  snapshot  Json     // Full data snapshot for restore capability
+  changeNote String? // Optional note describing what changed
+  createdBy String?  // User who created this version
   createdAt DateTime @default(now())
 
   @@unique([contentId, version])
+  @@index([contentId])
+  @@index([createdAt])
 }
 
 model Tag {

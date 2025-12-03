@@ -6,10 +6,8 @@ import {
 import { PrismaService } from '@app/database';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
-import { VersioningService } from './versioning.service';
+import { VersioningService, ContentSnapshot } from './versioning.service';
 import { TaggingService } from './tagging.service';
-import { NONAME } from 'dns';
-import { verify } from 'crypto';
 
 @Injectable()
 export class ContentService {
@@ -19,9 +17,13 @@ export class ContentService {
     private tagging: TaggingService,
   ) {}
 
+  /**
+   * CREATE Content → Creates version 1 with initial snapshot
+   */
   async create(dto: CreateContentDto, authorId: string) {
     try {
-      const con = await this.prisma.content.create({
+      // Create content
+      const content = await this.prisma.content.create({
         data: {
           title: dto.title,
           body: dto.body ?? null,
@@ -33,28 +35,43 @@ export class ContentService {
         },
       });
 
+      // Build snapshot for version 1
+      const snapshot: ContentSnapshot = {
+        title: content.title,
+        body: content.body,
+        contentType: content.contentType,
+        resourceUrl: content.resourceUrl,
+        hierarchyId: content.hierarchyId,
+        metadata: null,
+        tags: [],
+      };
+
+      // Create version 1
       await this.versioning.createSnapshot(
-        con.id, // contentId
-        con, // content
-        1, // version
-        dto.title, // title
-        dto.body, // body
+        content.id,
+        snapshot,
+        1, // First version
+        'Initial creation',
+        authorId,
       );
 
-      return con;
+      return content;
     } catch (err) {
       console.error('Create error:', err);
       throw new BadRequestException('Cannot create content');
     }
   }
 
+  /**
+   * Find all content with optional filters
+   */
   async findAll(query: {
     type?: string;
     includeArchived?: boolean;
     search?: string;
   }) {
     try {
-      const where: any = {};
+      const where: Record<string, unknown> = {};
 
       if (query.type) where.contentType = query.type;
       if (!query.includeArchived) where.isArchived = false;
@@ -71,36 +88,117 @@ export class ContentService {
     }
   }
 
+  /**
+   * Find one content by ID
+   */
   async findOne(id: string) {
     const content = await this.prisma.content.findUnique({ where: { id } });
     if (!content) throw new NotFoundException('Content not found');
     return content;
   }
 
-  async update(id: string, dto: UpdateContentDto) {
-    await this.findOne(id);
-    return this.prisma.content.update({ where: { id }, data: { ...dto } });
+  /**
+   * UPDATE Content → Creates version N+1 with updated snapshot
+   */
+  async update(id: string, dto: UpdateContentDto, updatedBy?: string) {
+    const existingContent = await this.findOne(id);
+
+    // Update content
+    const updatedContent = await this.prisma.content.update({
+      where: { id },
+      data: { ...dto },
+    });
+
+    // Get next version number
+    const nextVersion = await this.versioning.getNextVersion(id);
+
+    // Build snapshot of updated content
+    const snapshot = await this.versioning.buildSnapshotFromContent(id);
+
+    // Create new version with snapshot
+    await this.versioning.createSnapshot(
+      id,
+      snapshot,
+      nextVersion,
+      dto.title !== existingContent.title
+        ? `Title changed: "${existingContent.title}" → "${dto.title}"`
+        : 'Content updated',
+      updatedBy,
+    );
+
+    return updatedContent;
   }
 
-  async archive(id: string) {
-    await this.findOne(id);
+  /**
+   * ARCHIVE Content → Saves version before archiving
+   */
+  async archive(id: string, archivedBy?: string) {
+    const content = await this.findOne(id);
+
+    if (content.isArchived) {
+      throw new BadRequestException('Content is already archived');
+    }
+
+    // Get next version number
+    const nextVersion = await this.versioning.getNextVersion(id);
+
+    // Build snapshot before archiving
+    const snapshot = await this.versioning.buildSnapshotFromContent(id);
+
+    // Create version snapshot before archive
+    await this.versioning.createSnapshot(
+      id,
+      snapshot,
+      nextVersion,
+      'Archived',
+      archivedBy,
+    );
+
+    // Archive content
     return this.prisma.content.update({
       where: { id },
       data: { isArchived: true, archivedAt: new Date() },
     });
   }
 
-  async restore(id: string) {
-    await this.findOne(id);
+  /**
+   * RESTORE Content from archive (unarchive)
+   */
+  async restore(id: string, restoredBy?: string) {
+    const content = await this.findOne(id);
+
+    if (!content.isArchived) {
+      throw new BadRequestException('Content is not archived');
+    }
+
+    // Get next version number
+    const nextVersion = await this.versioning.getNextVersion(id);
+
+    // Build snapshot
+    const snapshot = await this.versioning.buildSnapshotFromContent(id);
+
+    // Create version snapshot for restore action
+    await this.versioning.createSnapshot(
+      id,
+      snapshot,
+      nextVersion,
+      'Restored from archive',
+      restoredBy,
+    );
+
+    // Unarchive content
     return this.prisma.content.update({
       where: { id },
       data: { isArchived: false, archivedAt: null },
     });
   }
 
+  /**
+   * List all content, optionally filtered by tag
+   */
   async list(tag?: string) {
     if (!tag) {
-      const cons = await this.prisma.content.findMany({
+      const contents = await this.prisma.content.findMany({
         include: {
           tags: {
             include: {
@@ -109,7 +207,7 @@ export class ContentService {
           },
         },
       });
-      return cons.map((d) => ({
+      return contents.map((d) => ({
         ...d,
         tags: d.tags.map((dt) => dt.tag.name),
       }));
@@ -127,64 +225,98 @@ export class ContentService {
     return conTags.map((dt) => dt.content);
   }
 
+  /**
+   * Get content with tags and versions
+   */
   async getTag(id: string) {
-    const con = await this.prisma.content.findUnique({
+    const content = await this.prisma.content.findUnique({
       where: { id },
       include: {
         versions: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { version: 'desc' },
+          select: {
+            id: true,
+            version: true,
+            changeNote: true,
+            createdBy: true,
+            createdAt: true,
+          },
         },
         tags: {
           include: { tag: true },
         },
       },
     });
-    if (!con) throw new NotFoundException('Content not found');
-    return { ...con, tags: con.tags.map((dt) => dt.tag.name) };
+    if (!content) throw new NotFoundException('Content not found');
+    return { ...content, tags: content.tags.map((dt) => dt.tag.name) };
   }
 
+  /**
+   * List all versions for a content
+   */
   async listVersions(id: string) {
-    return this.prisma.contentVersion.findMany({
-      where: { contentId: id },
-      orderBy: { createdAt: 'desc' },
-    });
+    await this.findOne(id); // Verify content exists
+    return this.versioning.getVersions(id);
   }
 
-  async restoreVersion(dto: CreateContentDto, id: string, versionId: string) {
-    const con = await this.prisma.content.findUnique({ where: { id } });
-    const ver = await this.prisma.contentVersion.findUnique({
-      where: { id: versionId },
-    });
+  /**
+   * RESTORE from specific version → Copies snapshot to content + creates new version
+   */
+  async restoreVersion(id: string, versionId: string, restoredBy?: string) {
+    await this.findOne(id); // Verify content exists
 
-    if (!con || !ver || ver.contentId !== id)
-      throw new NotFoundException('Content or Version not found');
+    // Use versioning service to restore from version
+    return this.versioning.restoreFromVersion(id, versionId, restoredBy);
+  }
 
-    // snapshot current
+  /**
+   * Compare two versions
+   */
+  async compareVersions(id: string, versionA: number, versionB: number) {
+    await this.findOne(id); // Verify content exists
+    return this.versioning.compareVersions(id, versionA, versionB);
+  }
+
+  /**
+   * Attach tags to content
+   */
+  async attachTags(id: string, tags: string[], updatedBy?: string) {
+    const content = await this.prisma.content.findUnique({ where: { id } });
+    if (!content) throw new NotFoundException('Document not found');
+
+    const result = await this.tagging.attachToContent(id, tags);
+
+    // Create version snapshot after tags change
+    const nextVersion = await this.versioning.getNextVersion(id);
+    const snapshot = await this.versioning.buildSnapshotFromContent(id);
     await this.versioning.createSnapshot(
-      id, // contentId
-      con, // content
-      ver.version, // version
-      con.title, // title
-      dto.body, // body
+      id,
+      snapshot,
+      nextVersion,
+      `Tags added: ${tags.join(', ')}`,
+      updatedBy,
     );
 
-    const updated = await this.prisma.content.update({
-      where: { id },
-      data: {
-        id: ver.contentId,
-        title: ver.title,
-      },
-    });
-    return updated;
+    return result;
   }
 
-  async attachTags(id: string, tags: string[]) {
-    const con = await this.prisma.content.findUnique({ where: { id } });
-    if (!con) throw new NotFoundException('Document not found');
-    return this.tagging.attachToContent(id, tags);
-  }
+  /**
+   * Detach tag from content
+   */
+  async detachTag(id: string, tagName: string, updatedBy?: string) {
+    const result = await this.tagging.detachFromContent(id, tagName);
 
-  async detachTag(id: string, tagName: string) {
-    return this.tagging.detachFromContent(id, tagName);
+    // Create version snapshot after tags change
+    const nextVersion = await this.versioning.getNextVersion(id);
+    const snapshot = await this.versioning.buildSnapshotFromContent(id);
+    await this.versioning.createSnapshot(
+      id,
+      snapshot,
+      nextVersion,
+      `Tag removed: ${tagName}`,
+      updatedBy,
+    );
+
+    return result;
   }
 }
