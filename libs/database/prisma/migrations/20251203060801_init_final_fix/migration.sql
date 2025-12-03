@@ -1,15 +1,14 @@
 -- CreateEnum
 CREATE TYPE "RoleName" AS ENUM ('ADMIN', 'INSTRUCTOR', 'STUDENT');
 
--- CreateEnum
-CREATE TYPE "NodeType" AS ENUM ('SUBJECT', 'CHAPTER', 'LESSON', 'TOPIC');
-
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "fullName" TEXT,
+    "resetToken" TEXT,
+    "resetTokenExpiry" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -57,38 +56,11 @@ CREATE TABLE "Content" (
     "title" TEXT NOT NULL,
     "body" TEXT,
     "contentType" TEXT NOT NULL,
-    "resourceUrl" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "isArchived" BOOLEAN NOT NULL DEFAULT false,
-    "archivedAt" TIMESTAMP(3),
     "authorId" TEXT NOT NULL,
-    "hierarchyId" TEXT,
 
     CONSTRAINT "Content_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "HierarchyNode" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "type" "NodeType" NOT NULL,
-    "parentId" TEXT,
-
-    CONSTRAINT "HierarchyNode_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Metadata" (
-    "id" TEXT NOT NULL,
-    "subject" TEXT,
-    "topic" TEXT,
-    "difficulty" TEXT,
-    "duration" INTEGER,
-    "prerequisites" TEXT,
-    "contentId" TEXT NOT NULL,
-
-    CONSTRAINT "Metadata_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -147,13 +119,13 @@ CREATE TABLE "RefreshToken" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_resetToken_key" ON "User"("resetToken");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Role_name_key" ON "Role"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Permission_action_subject_key" ON "Permission"("action", "subject");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Metadata_contentId_key" ON "Metadata"("contentId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ContentVersion_contentId_version_key" ON "ContentVersion"("contentId", "version");
@@ -190,15 +162,6 @@ ALTER TABLE "PermissionsOnRoles" ADD CONSTRAINT "PermissionsOnRoles_permissionId
 
 -- AddForeignKey
 ALTER TABLE "Content" ADD CONSTRAINT "Content_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Content" ADD CONSTRAINT "Content_hierarchyId_fkey" FOREIGN KEY ("hierarchyId") REFERENCES "HierarchyNode"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "HierarchyNode" ADD CONSTRAINT "HierarchyNode_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "HierarchyNode"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Metadata" ADD CONSTRAINT "Metadata_contentId_fkey" FOREIGN KEY ("contentId") REFERENCES "Content"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ContentVersion" ADD CONSTRAINT "ContentVersion_contentId_fkey" FOREIGN KEY ("contentId") REFERENCES "Content"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
