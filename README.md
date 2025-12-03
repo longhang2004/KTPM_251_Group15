@@ -131,15 +131,15 @@ npm run db:setup
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | - |
-| `JWT_SECRET` | Secret key for JWT signing | - |
-| `JWT_EXPIRES_IN` | JWT token expiration time | `1d` |
-| `AUTH_SERVICE_PORT` | Port for auth-service | `3001` |
-| `CONTENT_SERVICE_PORT` | Port for content-service | `3002` |
-| `ADMIN_EMAIL` | Email for default admin user | `admin@ktpm.edu.vn` |
-| `ADMIN_PASSWORD` | Password for default admin user | `admin123` |
+| Variable               | Description                     | Default             |
+| ---------------------- | ------------------------------- | ------------------- |
+| `DATABASE_URL`         | PostgreSQL connection string    | -                   |
+| `JWT_SECRET`           | Secret key for JWT signing      | -                   |
+| `JWT_EXPIRES_IN`       | JWT token expiration time       | `1d`                |
+| `AUTH_SERVICE_PORT`    | Port for auth-service           | `3001`              |
+| `CONTENT_SERVICE_PORT` | Port for content-service        | `3002`              |
+| `ADMIN_EMAIL`          | Email for default admin user    | `admin@ktpm.edu.vn` |
+| `ADMIN_PASSWORD`       | Password for default admin user | `admin123`          |
 
 ## 🏃 Running the Project
 
@@ -227,6 +227,7 @@ curl -X POST http://localhost:3001/api/v1/auth/login \
 ```
 
 Response:
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -318,24 +319,21 @@ async protectedRoute() {
 All important actions are logged to `AuditLog`:
 
 ```typescript
-await auditLogService.log(
-  userId,
-  'UPDATE_CONTENT',
-  'CONTENT_ID_123',
-  { changes: '...' }
-);
+await auditLogService.log(userId, 'UPDATE_CONTENT', 'CONTENT_ID_123', {
+  changes: '...',
+});
 ```
 
 ## 📝 Useful Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run start:auth` | Run auth-service (watch mode) |
-| `npm run start:content` | Run content-service (watch mode) |
-| `npm run db:setup` | Setup database (generate + migrate + seed) |
-| `npm run prisma:studio` | Open Prisma Studio GUI |
-| `npm run lint` | Run ESLint and auto-fix |
-| `npm run format` | Format code with Prettier |
+| Script                  | Description                                |
+| ----------------------- | ------------------------------------------ |
+| `npm run start:auth`    | Run auth-service (watch mode)              |
+| `npm run start:content` | Run content-service (watch mode)           |
+| `npm run db:setup`      | Setup database (generate + migrate + seed) |
+| `npm run prisma:studio` | Open Prisma Studio GUI                     |
+| `npm run lint`          | Run ESLint and auto-fix                    |
+| `npm run format`        | Format code with Prettier                  |
 
 ## 🤝 Contributing
 

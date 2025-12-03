@@ -2,9 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 // 1. Mẫu trả về cho API Check Access
 export class CheckAccessResponseDto {
-  @ApiProperty({ 
-    example: true, 
-    description: 'Indicates if the user has permission' 
+  @ApiProperty({
+    example: true,
+    description: 'Indicates if the user has permission',
   })
   hasAccess: boolean;
 }

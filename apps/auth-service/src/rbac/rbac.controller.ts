@@ -1,35 +1,35 @@
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  Get, 
-  Query, 
-  Delete, 
-  Param, 
-  UseGuards 
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
+  Delete,
+  Param,
+  UseGuards,
 } from '@nestjs/common';
 import { RbacService } from './rbac.service';
 import { AssignRoleDto } from './dtos/assign-role.dto';
 import { TogglePermissionDto } from './dtos/toggle-permission.dto';
 import { CreatePermissionDto } from './dtos/create-permission.dto';
-import { 
-  CheckAccessResponseDto, 
-  AssignRoleResponseDto, 
-  AddPermissionResponseDto 
+import {
+  CheckAccessResponseDto,
+  AssignRoleResponseDto,
+  AddPermissionResponseDto,
 } from './dtos/rbac-response.dto';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiQuery, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
   ApiParam,
-  ApiBearerAuth 
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 
 import { PermissionsGuard } from './guards/permissions.guard';
 import { RequirePermissions } from './decorators/require-permissions.decorator';
 // [LƯU Ý]: Sửa đường dẫn này theo đúng project của bạn
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('RBAC Management')
 @ApiBearerAuth() // Hiện ổ khóa trên Swagger
@@ -42,12 +42,13 @@ export class RbacController {
   // ==================================================================
 
   @Get('roles')
-  @ApiOperation({ 
-    summary: 'List all roles', 
-    description: 'Retrieve a list of all system roles (e.g., ADMIN, INSTRUCTOR) along with their currently assigned permissions.' 
+  @ApiOperation({
+    summary: 'List all roles',
+    description:
+      'Retrieve a list of all system roles (e.g., ADMIN, INSTRUCTOR) along with their currently assigned permissions.',
   })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('READ', 'ROLE') 
+  @RequirePermissions('READ', 'ROLE')
   async listRoles() {
     return this.rbacService.listRoles();
   }
@@ -57,22 +58,23 @@ export class RbacController {
   // ==================================================================
 
   @Post('permissions')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Create a new Permission definition',
-    description: 'Define a new Permission in the system (Action + Subject). E.g., CREATE_VIDEO, DELETE_COMMENT.' 
+    description:
+      'Define a new Permission in the system (Action + Subject). E.g., CREATE_VIDEO, DELETE_COMMENT.',
   })
   @ApiResponse({ status: 201, description: 'Permission created successfully.' })
   @ApiResponse({ status: 409, description: 'Permission already exists.' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('CREATE', 'PERMISSION') 
+  @RequirePermissions('CREATE', 'PERMISSION')
   async createPermission(@Body() dto: CreatePermissionDto) {
     return this.rbacService.createPermission(dto);
   }
 
   @Get('permissions')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'List all available permissions',
-    description: 'Get a flat list of all permissions defined in the database.'
+    description: 'Get a flat list of all permissions defined in the database.',
   })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('READ', 'PERMISSION')
@@ -81,9 +83,10 @@ export class RbacController {
   }
 
   @Delete('permissions/:id')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Delete a permission by ID',
-    description: 'Permanently remove a permission definition from the system. This will revoke it from all roles.'
+    description:
+      'Permanently remove a permission definition from the system. This will revoke it from all roles.',
   })
   @ApiParam({ name: 'id', description: 'The UUID of the permission to delete' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -97,21 +100,23 @@ export class RbacController {
   // ==================================================================
 
   @Post('assign-role')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Assign a role to a user',
-    description: 'Grant a specific role (e.g., INSTRUCTOR) to a user. A user can have multiple roles.'
+    description:
+      'Grant a specific role (e.g., INSTRUCTOR) to a user. A user can have multiple roles.',
   })
   @ApiResponse({ status: 201, type: AssignRoleResponseDto })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('GRANT', 'ROLE') 
+  @RequirePermissions('GRANT', 'ROLE')
   async assignRole(@Body() dto: AssignRoleDto) {
     return this.rbacService.assignRoleToUser(dto);
   }
 
   @Post('revoke-role')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Revoke a role from a user',
-    description: 'Remove a specific role from a user. The user will lose all permissions associated with that role.'
+    description:
+      'Remove a specific role from a user. The user will lose all permissions associated with that role.',
   })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('REVOKE', 'ROLE')
@@ -120,9 +125,10 @@ export class RbacController {
   }
 
   @Post('permissions/add-to-role')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Grant a permission to a role',
-    description: 'Dynamically attach a permission to a specific role. All users with this role will immediately inherit this permission.'
+    description:
+      'Dynamically attach a permission to a specific role. All users with this role will immediately inherit this permission.',
   })
   @ApiResponse({ status: 201, type: AddPermissionResponseDto })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -132,14 +138,19 @@ export class RbacController {
   }
 
   @Post('permissions/remove-from-role')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Revoke a permission from a role',
-    description: 'Detach a permission from a specific role. Users with this role will no longer have this permission.'
+    description:
+      'Detach a permission from a specific role. Users with this role will no longer have this permission.',
   })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('UPDATE', 'ROLE')
   async removePermissionFromRole(@Body() dto: TogglePermissionDto) {
-    return this.rbacService.revokePermissionFromRole(dto.roleName, dto.action, dto.subject);
+    return this.rbacService.revokePermissionFromRole(
+      dto.roleName,
+      dto.action,
+      dto.subject,
+    );
   }
 
   // ==================================================================
@@ -147,9 +158,10 @@ export class RbacController {
   // ==================================================================
 
   @Get('check-access')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Verify user access',
-    description: 'Check if a specific user has sufficient permissions to perform an action on a subject. Returns boolean.'
+    description:
+      'Check if a specific user has sufficient permissions to perform an action on a subject. Returns boolean.',
   })
   @ApiQuery({ name: 'userId', description: 'UUID of the user to check' })
   @ApiQuery({ name: 'action', description: 'Action to verify (e.g., CREATE)' })
@@ -160,7 +172,11 @@ export class RbacController {
     @Query('action') action: string,
     @Query('subject') subject: string,
   ) {
-    const hasAccess = await this.rbacService.checkAccess(userId, action, subject);
+    const hasAccess = await this.rbacService.checkAccess(
+      userId,
+      action,
+      subject,
+    );
     return { hasAccess };
   }
 }

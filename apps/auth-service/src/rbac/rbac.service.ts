@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '@app/database/prisma.service';
 import { RoleName } from '@prisma/client';
 import { AssignRoleDto } from './dtos/assign-role.dto';
@@ -67,13 +71,15 @@ export class RbacService {
 
   async assignRoleToUser(dto: AssignRoleDto) {
     const { userId, roleName } = dto;
-    
+
     // Validate User & Role exist
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    
+
     // RoleName là Enum nên tìm theo name
-    const role = await this.prisma.role.findUnique({ where: { name: roleName } });
+    const role = await this.prisma.role.findUnique({
+      where: { name: roleName },
+    });
     if (!role) throw new NotFoundException(`Role ${roleName} not found in DB`);
 
     return this.prisma.rolesOnUsers.upsert({
@@ -84,7 +90,9 @@ export class RbacService {
   }
 
   async revokeRoleFromUser(userId: string, roleName: RoleName) {
-    const role = await this.prisma.role.findUnique({ where: { name: roleName } });
+    const role = await this.prisma.role.findUnique({
+      where: { name: roleName },
+    });
     if (!role) throw new NotFoundException('Role not found');
 
     return this.prisma.rolesOnUsers.deleteMany({
@@ -93,23 +101,36 @@ export class RbacService {
   }
 
   async addPermissionToRole(dto: TogglePermissionDto) {
-    const role = await this.prisma.role.findUnique({ where: { name: dto.roleName } });
+    const role = await this.prisma.role.findUnique({
+      where: { name: dto.roleName },
+    });
     if (!role) throw new NotFoundException('Role not found');
 
     const permission = await this.prisma.permission.findUnique({
       where: { action_subject: { action: dto.action, subject: dto.subject } },
     });
-    if (!permission) throw new NotFoundException(`Permission ${dto.action}-${dto.subject} not found. Please create permission first.`);
+    if (!permission)
+      throw new NotFoundException(
+        `Permission ${dto.action}-${dto.subject} not found. Please create permission first.`,
+      );
 
     return this.prisma.permissionsOnRoles.upsert({
-      where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
+      where: {
+        roleId_permissionId: { roleId: role.id, permissionId: permission.id },
+      },
       update: {},
       create: { roleId: role.id, permissionId: permission.id },
     });
   }
 
-  async revokePermissionFromRole(roleName: RoleName, action: string, subject: string) {
-    const role = await this.prisma.role.findUnique({ where: { name: roleName } });
+  async revokePermissionFromRole(
+    roleName: RoleName,
+    action: string,
+    subject: string,
+  ) {
+    const role = await this.prisma.role.findUnique({
+      where: { name: roleName },
+    });
     if (!role) throw new NotFoundException('Role not found');
 
     const permission = await this.prisma.permission.findUnique({
@@ -126,7 +147,11 @@ export class RbacService {
   // GROUP 4: ACCESS CONTROL (Security Core)
   // ==================================================================
 
-  async checkAccess(userId: string, action: string, subject: string): Promise<boolean> {
+  async checkAccess(
+    userId: string,
+    action: string,
+    subject: string,
+  ): Promise<boolean> {
     // 1. Lấy tất cả Role của User
     const userRoles = await this.prisma.rolesOnUsers.findMany({
       where: { userId },
@@ -140,13 +165,13 @@ export class RbacService {
     });
 
     // 2. Gộp tất cả Permission lại thành 1 mảng
-    const permissions = userRoles.flatMap((ur) => 
-      ur.role.permissions.map((rp) => rp.permission)
+    const permissions = userRoles.flatMap((ur) =>
+      ur.role.permissions.map((rp) => rp.permission),
     );
 
     // 3. Kiểm tra xem có quyền nào khớp không
     return permissions.some(
-      (p) => p.action === action && p.subject === subject
+      (p) => p.action === action && p.subject === subject,
     );
   }
 }

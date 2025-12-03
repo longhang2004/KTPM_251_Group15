@@ -17,10 +17,6 @@ import { JwtStrategy } from '../common/auth/jwt.strategy';
     }),
   ],
   controllers: [ContentController],
-  providers: [
-    ContentService,
-    JwtAuthGuard,
-    JwtStrategy,
-  ],
+  providers: [ContentService, JwtAuthGuard, JwtStrategy],
 })
 export class ContentModule {}

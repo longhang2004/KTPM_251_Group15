@@ -14,7 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Lấy user + roles + permissions từ DB 
+    // Lấy user + roles + permissions từ DB
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       include: {
@@ -24,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
               include: {
                 permissions: {
                   include: {
-                    permission: true
+                    permission: true,
                   },
                 },
               },
@@ -38,12 +38,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found');
     }
 
-    const roles = user.roles.map(r => r.role.name);
+    const roles = user.roles.map((r) => r.role.name);
 
-    const permissions = user.roles.flatMap(r =>
-      r.role.permissions.map(p =>
-        `${p.permission.action}:${p.permission.subject}`
-      )
+    const permissions = user.roles.flatMap((r) =>
+      r.role.permissions.map(
+        (p) => `${p.permission.action}:${p.permission.subject}`,
+      ),
     );
 
     return {

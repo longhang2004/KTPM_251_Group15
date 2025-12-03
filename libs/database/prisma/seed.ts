@@ -9,23 +9,32 @@ async function main() {
   // 1. TẠO ROLES (VAI TRÒ)
   // ====================================================================
   console.log('📝 Creating Roles...');
-  
+
   const adminRole = await prisma.role.upsert({
     where: { name: RoleName.ADMIN },
     update: {},
-    create: { name: RoleName.ADMIN, description: 'System Administrator - Full access' },
+    create: {
+      name: RoleName.ADMIN,
+      description: 'System Administrator - Full access',
+    },
   });
 
   const instructorRole = await prisma.role.upsert({
     where: { name: RoleName.INSTRUCTOR },
     update: {},
-    create: { name: RoleName.INSTRUCTOR, description: 'Instructor - Manage content and students' },
+    create: {
+      name: RoleName.INSTRUCTOR,
+      description: 'Instructor - Manage content and students',
+    },
   });
 
   const studentRole = await prisma.role.upsert({
     where: { name: RoleName.STUDENT },
     update: {},
-    create: { name: RoleName.STUDENT, description: 'Student - View and learn content' },
+    create: {
+      name: RoleName.STUDENT,
+      description: 'Student - View and learn content',
+    },
   });
 
   console.log('✅ Roles created/verified');
@@ -34,7 +43,7 @@ async function main() {
   // 2. TẠO PERMISSIONS (QUYỀN HẠN)
   // ====================================================================
   console.log('🔐 Creating Permissions...');
-  
+
   // Danh sách toàn bộ quyền trong hệ thống
   const permissionsData = [
     // --- QUẢN LÝ CONTENT (BÀI HỌC) ---
@@ -51,8 +60,8 @@ async function main() {
     { action: 'DELETE', subject: 'USER' },
 
     // --- QUẢN LÝ ROLE (PHÂN QUYỀN - QUAN TRỌNG CHO ADMIN) ---
-    { action: 'READ', subject: 'ROLE' },   // Xem danh sách role
-    { action: 'GRANT', subject: 'ROLE' },  // Gán role cho user (assign-role)
+    { action: 'READ', subject: 'ROLE' }, // Xem danh sách role
+    { action: 'GRANT', subject: 'ROLE' }, // Gán role cho user (assign-role)
     { action: 'REVOKE', subject: 'ROLE' }, // Thu hồi role (revoke-role)
     { action: 'UPDATE', subject: 'ROLE' }, // Gán/Gỡ permission cho role
 
@@ -104,10 +113,11 @@ async function main() {
   console.log('   👑 ADMIN Role now has ALL permissions');
 
   // --- B. INSTRUCTOR: CONTENT + USER VIEW + FEEDBACK ---
-  const instructorPerms = allPermissions.filter((p) => 
-    p.subject === 'CONTENT' || 
-    p.action === 'INTERVENE' ||
-    (p.subject === 'USER' && p.action === 'READ')
+  const instructorPerms = allPermissions.filter(
+    (p) =>
+      p.subject === 'CONTENT' ||
+      p.action === 'INTERVENE' ||
+      (p.subject === 'USER' && p.action === 'READ'),
   );
 
   for (const perm of instructorPerms) {
@@ -122,8 +132,8 @@ async function main() {
   }
 
   // --- C. STUDENT: CHỈ ĐỌC CONTENT ---
-  const studentPerms = allPermissions.filter((p) => 
-    p.subject === 'CONTENT' && p.action === 'READ'
+  const studentPerms = allPermissions.filter(
+    (p) => p.subject === 'CONTENT' && p.action === 'READ',
   );
 
   for (const perm of studentPerms) {
@@ -146,7 +156,7 @@ async function main() {
   // Kiểm tra xem user có tồn tại không
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },
-    include: { roles: true } // Lấy kèm roles để check
+    include: { roles: true }, // Lấy kèm roles để check
   });
 
   if (!existingAdmin) {
@@ -160,22 +170,24 @@ async function main() {
         fullName: 'Super Administrator',
         roles: {
           create: [
-            { roleId: adminRole.id } // Gán Role ADMIN (Role này đã chứa full quyền)
-          ]
-        }
+            { roleId: adminRole.id }, // Gán Role ADMIN (Role này đã chứa full quyền)
+          ],
+        },
       },
     });
     console.log(`✅ Admin user created: ${adminEmail} / ${adminPassword}`);
   } else {
     // Nếu user đã tồn tại, kiểm tra xem đã có role ADMIN chưa, nếu chưa thì gán thêm
-    const hasAdminRole = existingAdmin.roles.some(r => r.roleId === adminRole.id);
-    
+    const hasAdminRole = existingAdmin.roles.some(
+      (r) => r.roleId === adminRole.id,
+    );
+
     if (!hasAdminRole) {
       await prisma.rolesOnUsers.create({
         data: {
           userId: existingAdmin.id,
-          roleId: adminRole.id
-        }
+          roleId: adminRole.id,
+        },
       });
       console.log('✅ Updated existing Admin user with ADMIN role');
     } else {

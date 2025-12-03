@@ -4,7 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from '@app/database';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
-import { RbacModule } from './rbac/rbac.module'; 
+import { RbacModule } from './rbac/rbac.module';
 
 @Module({
   imports: [
@@ -12,7 +12,7 @@ import { RbacModule } from './rbac/rbac.module';
     DatabaseModule,
     UserModule,
     AuthModule,
-    RbacModule, 
+    RbacModule,
   ],
 })
 export class AppModule {}

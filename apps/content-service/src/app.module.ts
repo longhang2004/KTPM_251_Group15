@@ -7,9 +7,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ContentModule } from './content/content.module';
 
 @Module({
-  imports: [
-    ContentModule,
-  ],
+  imports: [ContentModule],
   providers: [
     {
       provide: APP_FILTER,
