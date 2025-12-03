@@ -35,18 +35,19 @@ import {
   type CurrentUserData,
 } from '../common/decorators/current-user.decorator';
 // import { Public } from '../common/decorators/public.decorator';
-// import { PermissionsGuard } from '../common/authorization/permissions.guard';
+import { PermissionsGuard } from '../common/authorization/permissions.guard';
 import { RequirePermissions } from '../common/authorization/permissions.decorator';
 
 @ApiTags('Content v2')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
 @Controller('content-v2')
 export class ContentV2Controller {
   constructor(private readonly contentV2Service: ContentV2Service) {}
 
-  @RequirePermissions('CREATE:CONTENT')
+  //Create(ADMIN, INSTRUCTOR)
   @Post()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('CREATE:CONTENT')
   @ApiOperation({
     summary: 'Create new content with file attachments',
     description:
@@ -70,6 +71,7 @@ export class ContentV2Controller {
     return this.contentV2Service.createContent(createContentDto);
   }
 
+  //List with filtering(public)
   @Get()
   @ApiOperation({
     summary: 'Get content list with advanced filtering',
@@ -88,6 +90,7 @@ export class ContentV2Controller {
     return this.contentV2Service.getContentList(queryDto);
   }
 
+  //List one by id(public)
   @Get(':id')
   @ApiOperation({
     summary: 'Get content by ID',
@@ -114,8 +117,10 @@ export class ContentV2Controller {
     return this.contentV2Service.getContentById(id);
   }
 
-  @RequirePermissions('UPDATE:CONTENT')
+  //Update
   @Patch(':id')
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('UPDATE:CONTENT')
   @ApiOperation({
     summary: 'Update content',
     description: 'Update content information, file attachments, and metadata',
@@ -148,8 +153,10 @@ export class ContentV2Controller {
     return this.contentV2Service.updateContent(id, updateContentDto);
   }
 
-  @RequirePermissions('DELETE:CONTENT')
+  // Archive(soft delete): Admin, Instructor
   @Delete(':id/archive')
+  @UseGuards(JwtAuthGuard,PermissionsGuard) 
+  @RequirePermissions('DELETE:CONTENT')
   @ApiOperation({
     summary: 'Archive content',
     description: 'Soft delete content by changing status to ARCHIVED',
@@ -179,10 +186,11 @@ export class ContentV2Controller {
   }
 
   /**
-   * API 6: Restore archived content
+   * API 6: Restore archived content(ADMIN)
    */
-  @RequirePermissions('RESTORE:CONTENT')
   @Post(':id/restore')
+  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @RequirePermissions('RESTORE:CONTENT')
   @ApiOperation({
     summary: 'Restore archived content',
     description: 'Restore archived content back to DRAFT status',
