@@ -8,8 +8,17 @@ export function swaggerSetup(app: INestApplication, path: string): void {
     .setDescription(
       process.env.APP_DESCRIPTION || 'Content Service API Documentation',
     )
-    .addBearerAuth({ in: 'header', type: 'http' }, 'token')
-    .addSecurityRequirements('token')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, apiSwaggerConfig);
