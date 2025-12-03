@@ -93,10 +93,6 @@ model Content {
   authorId    String
   author      User      @relation("CreatedBy", fields: [authorId], references: [id])
 
-  //Hierarchy
-  hierarchyId String?
-  hierarchy   HierarchyNode? @relation(fields: [hierarchyId], references: [id])
-
   //Metadata (FR-LCM-01, 04)
   metadata    Metadata?
 
@@ -107,31 +103,12 @@ model Content {
   tags        TagsOnContents[]
 }
 
-model HierarchyNode {
-  id          String   @id @default(uuid())
-  name        String
-  type        NodeType
-  parentId    String?
-  parent      HierarchyNode? @relation("HierarchyTree", fields: [parentId], references: [id])
-  children    HierarchyNode[] @relation("HierarchyTree")
-
-  // Mỗi node có nhiều content
-  contents    Content[] 
-}
-
-enum NodeType {
-  SUBJECT
-  CHAPTER
-  LESSON
-  TOPIC
-}
-
 model Metadata {
   id            String   @id @default(uuid())
   subject       String?
   topic         String?
-  difficulty    String? 
-  duration      Int?
+  difficulty    String? // Beginner, Intermediate, Advanced, Expert
+  duration      Int? // Content(lesson) duration
   prerequisites String?
 
   content   Content @relation(fields: [contentId], references: [id])

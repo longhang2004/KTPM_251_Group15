@@ -27,4 +27,15 @@ export class CreateContentDto {
     @IsString()
     @IsUrl()
     resourceUrl?: string;
+
+
+    @ApiProperty({ required: false, type: Object, description: 'Optional metadata' })
+    @IsOptional()
+    metadata?: {
+        subject?: string;
+        topic?: string;
+        difficulty?: string;
+        duration?: number;
+        prerequisites?: string;
+    };
 }
