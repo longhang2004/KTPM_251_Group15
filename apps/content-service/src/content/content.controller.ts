@@ -31,7 +31,7 @@ export class ContentController {
   @ApiOperation({ summary: 'Create new content' })
   @ApiResponse({ status: 201, description: 'Content created successfully.' })
   @UsePipes(new ValidationPipe({ transform: true }))
-  create(@Body() dto: CreateContentDto, @Req() req) {
+  create(@Body() dto: CreateContentDto, @Req() req: { user: { userId: string } }) {
     return this.contentService.create(dto, req.user.userId);
   }
 

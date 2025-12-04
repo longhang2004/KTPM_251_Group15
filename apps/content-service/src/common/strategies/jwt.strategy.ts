@@ -63,7 +63,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     );
 
     return {
-      id: user.id,
+      userId: user.id,  // Changed from 'id' to 'userId' for consistency
       email: user.email,
       fullName: user.fullName,
       roles: user.roles.map((r) => r.role.name),
