@@ -109,6 +109,10 @@ export class ContentService {
         };
       }
 
+      // Ensure offset and limit are numbers (query params come as strings)
+      const skip = query.offset !== undefined ? Number(query.offset) : 0;
+      const take = query.limit !== undefined ? Number(query.limit) : 20;
+
       const contents = await this.prisma.content.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -119,8 +123,8 @@ export class ContentService {
             select: { id: true, email: true, fullName: true },
           },
         },
-        skip: query.offset || 0,
-        take: query.limit || 20,
+        skip,
+        take,
       });
 
       // Format tags as string array

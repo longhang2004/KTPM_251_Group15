@@ -43,6 +43,26 @@ export class VersioningController {
   }
 
   /**
+   * Compare two versions (static route - must come before :version)
+   */
+  @Get('compare')
+  @ApiOperation({ summary: 'Compare two versions of a content' })
+  @ApiParam({ name: 'contentId', description: 'Content ID' })
+  @ApiQuery({ name: 'versionA', description: 'First version number' })
+  @ApiQuery({ name: 'versionB', description: 'Second version number' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns differences between two versions',
+  })
+  compareVersions(
+    @Param('contentId') contentId: string,
+    @Query('versionA', ParseIntPipe) versionA: number,
+    @Query('versionB', ParseIntPipe) versionB: number,
+  ) {
+    return this.versioningService.compareVersions(contentId, versionA, versionB);
+  }
+
+  /**
    * Get a specific version
    */
   @Get(':version')
@@ -62,26 +82,6 @@ export class VersioningController {
     @Param('version', ParseIntPipe) version: number,
   ) {
     return this.versioningService.getVersion(contentId, version);
-  }
-
-  /**
-   * Compare two versions
-   */
-  @Get('compare')
-  @ApiOperation({ summary: 'Compare two versions of a content' })
-  @ApiParam({ name: 'contentId', description: 'Content ID' })
-  @ApiQuery({ name: 'versionA', description: 'First version number' })
-  @ApiQuery({ name: 'versionB', description: 'Second version number' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns differences between two versions',
-  })
-  compareVersions(
-    @Param('contentId') contentId: string,
-    @Query('versionA', ParseIntPipe) versionA: number,
-    @Query('versionB', ParseIntPipe) versionB: number,
-  ) {
-    return this.versioningService.compareVersions(contentId, versionA, versionB);
   }
 
   /**

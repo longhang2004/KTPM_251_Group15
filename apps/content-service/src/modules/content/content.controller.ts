@@ -23,7 +23,7 @@ import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
 import { JwtAuthGuard, CurrentUser } from '../auth';
-import { JwtPayload } from '../auth/strategies/jwt.strategy';
+import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PermissionsGuard, RequirePermissions } from '../authorization';
 
 /**
