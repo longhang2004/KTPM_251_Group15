@@ -3,12 +3,10 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UploadedFile,
   UseInterceptors,
-  Res,
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -22,7 +20,6 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { FilesService } from './files.service';
-import { UpdateFileDto } from './dto/update-file.dto';
 import {
   FileResponseDto,
   FileUploadResponseDto,
@@ -89,53 +86,6 @@ export class FilesController {
     @Param('fileId') fileId: string,
   ): Promise<ResponseDto<FileResponseDto>> {
     return this.filesService.getFileById(fileId);
-  }
-
-  @Get(':fileId/download')
-  @ApiOperation({ summary: 'Download file content' })
-  @ApiParam({ name: 'fileId' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'File downloaded successfully',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'File not found',
-  })
-  async downloadFile(
-    @Param('fileId') fileId: string,
-    @Res() res: Response,
-  ): Promise<void> {
-    const { buffer, fileName, contentType } =
-      await this.filesService.downloadFile(fileId);
-
-    res.set({
-      'Content-Type': contentType,
-      'Content-Disposition': `attachment; filename="${fileName}"`,
-      'Content-Length': buffer.length.toString(),
-    });
-
-    res.send(buffer);
-  }
-
-  @Patch(':fileId')
-  @ApiOperation({ summary: 'Update file metadata' })
-  @ApiParam({ name: 'fileId' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'File updated successfully',
-    type: ResponseDto<FileResponseDto>,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'File not found',
-  })
-  @ApiBody({ type: UpdateFileDto })
-  async updateFile(
-    @Param('fileId') fileId: string,
-    @Body() updateFileDto: UpdateFileDto,
-  ): Promise<ResponseDto<FileResponseDto>> {
-    return this.filesService.updateFile(fileId, updateFileDto);
   }
 
   @Delete(':fileId')

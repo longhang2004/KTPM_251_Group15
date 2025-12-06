@@ -32,9 +32,6 @@ export class ContentV2Service {
     private readonly versioningService: VersioningService,
   ) {}
 
-  /**
-   * Get first user for testing
-   */
   async getFirstUser() {
     const user = await this.prisma.user.findFirst();
     if (!user) {
@@ -43,9 +40,6 @@ export class ContentV2Service {
     return user;
   }
 
-  /**
-   * Create new content with file attachments
-   */
   async createContent(
     createContentDto: CreateContentV2Dto,
   ): Promise<ResponseDto<ContentV2ResponseDto>> {
@@ -180,9 +174,6 @@ export class ContentV2Service {
     }
   }
 
-  /**
-   * Get content list with filtering and pagination
-   */
   async getContentList(
     queryDto: QueryContentV2Dto,
   ): Promise<ResponseDto<ContentV2ListResponseDto>> {
@@ -315,9 +306,6 @@ export class ContentV2Service {
     }
   }
 
-  /**
-   * Get content by ID with full details
-   */
   async getContentById(id: string): Promise<ResponseDto<ContentV2ResponseDto>> {
     try {
       const content = await this.getContentWithRelations(id);
@@ -343,9 +331,6 @@ export class ContentV2Service {
     }
   }
 
-  /**
-   * Update content
-   */
   async updateContent(
     id: string,
     updateContentDto: UpdateContentV2Dto,
@@ -512,9 +497,6 @@ export class ContentV2Service {
     }
   }
 
-  /**
-   * Archive content (soft delete) - saves version before archiving
-   */
   async archiveContent(id: string): Promise<ResponseDto<null>> {
     try {
       const existingContent = await this.prisma.content.findUnique({
@@ -603,9 +585,6 @@ export class ContentV2Service {
     }
   }
 
-  /**
-   * Restore archived content - creates a new version
-   */
   async restoreContent(id: string): Promise<ResponseDto<ContentV2ResponseDto>> {
     try {
       const existingContent = await this.prisma.content.findUnique({
@@ -699,9 +678,6 @@ export class ContentV2Service {
     }
   }
 
-  /**
-   * Get content with all relations
-   */
   private async getContentWithRelations(id: string) {
     return this.prisma.content.findUnique({
       where: { id },
@@ -744,9 +720,6 @@ export class ContentV2Service {
     });
   }
 
-  /**
-   * Map database entity to response DTO
-   */
   private mapToResponseDto(content: any): ContentV2ResponseDto {
     const fileCount = content.files?.length || 0;
     const totalFileSize =
