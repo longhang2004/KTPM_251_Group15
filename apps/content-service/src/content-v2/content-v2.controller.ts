@@ -119,7 +119,7 @@ export class ContentV2Controller {
 
   //Update
   @Patch(':id')
-  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('UPDATE:CONTENT')
   @ApiOperation({
     summary: 'Update content',
@@ -155,7 +155,7 @@ export class ContentV2Controller {
 
   // Archive(soft delete): Admin, Instructor
   @Delete(':id/archive')
-  @UseGuards(JwtAuthGuard,PermissionsGuard) 
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('DELETE:CONTENT')
   @ApiOperation({
     summary: 'Archive content',
@@ -185,11 +185,8 @@ export class ContentV2Controller {
     return this.contentV2Service.archiveContent(id);
   }
 
-  /**
-   * API 6: Restore archived content(ADMIN)
-   */
   @Post(':id/restore')
-  @UseGuards(JwtAuthGuard,PermissionsGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('RESTORE:CONTENT')
   @ApiOperation({
     summary: 'Restore archived content',
@@ -219,11 +216,6 @@ export class ContentV2Controller {
     return this.contentV2Service.restoreContent(id);
   }
 
-  // Additional utility endpoints
-
-  /**
-   * Get archived content list
-   */
   @Get('archived/list')
   @ApiOperation({
     summary: 'Get archived content list',
