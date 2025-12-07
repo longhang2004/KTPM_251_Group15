@@ -27,6 +27,12 @@
       ],
       "@app/database/*": [
         "libs/database/src/*"
+      ],
+      "@app/minio": [
+        "libs/minio"
+      ],
+      "@app/minio/*": [
+        "libs/minio/*"
       ]
     }
   }

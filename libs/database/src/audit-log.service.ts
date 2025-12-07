@@ -24,7 +24,7 @@ export class AuditLogService {
         userId,
         action,
         subject,
-        details: details || undefined,
+        details: details ?? undefined,
       },
     });
   }

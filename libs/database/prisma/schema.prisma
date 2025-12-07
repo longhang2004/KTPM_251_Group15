@@ -1,7 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,7 +10,6 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-        
 
 // --- Task 1: Auth & User Schema ---
 model User {
@@ -23,13 +21,18 @@ model User {
   resetTokenExpiry DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
-  
+
   roles RolesOnUsers[]
-  
+
   // Relation to Content (Task 4)
-  createdContents Content[] @relation("CreatedBy")
+  createdContents Content[]      @relation("CreatedBy")
   auditLogs       AuditLog[]
   refreshTokens   RefreshToken[]
+  contentUsages   ContentUsage[]
+
+  // File relations
+  uploadedFiles File[] @relation("UploadedFiles")
+  deletedFiles  File[] @relation("DeletedFiles")
 }
 
 enum RoleName {
@@ -42,19 +45,19 @@ model Role {
   id          String   @id @default(uuid())
   name        RoleName @unique // Valid values: ADMIN, INSTRUCTOR, STUDENT
   description String?
-  
+
   users       RolesOnUsers[]
   permissions PermissionsOnRoles[]
 }
 
 model Permission {
-  id          String   @id @default(uuid())
-  action      String   // Example: "CREATE", "READ", "UPDATE", "DELETE"
-  subject     String   // Example: "CONTENT", "USER"
+  id          String  @id @default(uuid())
+  action      String // Example: "CREATE", "READ", "UPDATE", "DELETE"
+  subject     String // Example: "CONTENT", "USER"
   description String?
-  
+
   roles PermissionsOnRoles[]
-  
+
   @@unique([action, subject])
 }
 
@@ -64,7 +67,7 @@ model RolesOnUsers {
   userId String
   role   Role   @relation(fields: [roleId], references: [id])
   roleId String
-  
+
   @@id([userId, roleId])
 }
 
@@ -73,24 +76,79 @@ model PermissionsOnRoles {
   roleId       String
   permission   Permission @relation(fields: [permissionId], references: [id])
   permissionId String
-  
+
   @@id([roleId, permissionId])
 }
 
 // --- Task 4: Content Management Schema ---
 model Content {
-  id          String    @id @default(uuid())
+  id          String  @id @default(uuid())
   title       String
   body        String?
-  contentType String    // "LESSON", "QUIZ", "ASSIGNMENT"
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  authorId    String
-  author      User      @relation("CreatedBy", fields: [authorId], references: [id])
-  
-  versions    ContentVersion[]
-  tags        TagsOnContents[]
+  // Multimedia (FR-LCM-05)
+  contentType String // "TEXT", "VIDEO", "IMAGE", "PDF", ...
+  resourceUrl String? // link video, link pdf, file path,...
+
+  //Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  //Archive support (FR-LCM-03)
+  isArchived Boolean   @default(false)
+  archivedAt DateTime?
+
+  //Author
+  authorId String
+  author   User   @relation("CreatedBy", fields: [authorId], references: [id])
+
+  //Hierarchy
+  hierarchyId String?
+  hierarchy   HierarchyNode? @relation(fields: [hierarchyId], references: [id])
+
+  //Metadata (FR-LCM-01, 04)
+  metadata Metadata?
+
+  // Versioning (FR-LCM-02)
+  versions ContentVersion[]
+
+  // Tags (FR-LCM-04)
+  tags TagsOnContents[]
+
+  // Usage tracking
+  usages ContentUsage[]
+
+  files File[] @relation("ContentFiles")
+}
+
+model HierarchyNode {
+  id       String          @id @default(uuid())
+  name     String
+  type     NodeType
+  parentId String?
+  parent   HierarchyNode?  @relation("HierarchyTree", fields: [parentId], references: [id])
+  children HierarchyNode[] @relation("HierarchyTree")
+
+  // Mỗi node có nhiều content
+  contents Content[]
+}
+
+enum NodeType {
+  SUBJECT
+  CHAPTER
+  LESSON
+  TOPIC
+}
+
+model Metadata {
+  id            String  @id @default(uuid())
+  subject       String?
+  topic         String?
+  difficulty    String?
+  duration      Int?
+  prerequisites String?
+
+  content   Content @relation(fields: [contentId], references: [id])
+  contentId String  @unique
 }
 
 model ContentVersion {
@@ -98,17 +156,20 @@ model ContentVersion {
   contentId String
   content   Content  @relation(fields: [contentId], references: [id])
   version   Int
-  title     String
-  body      String?
+  snapshot  Json     // Full data snapshot for restore capability
+  changeNote String? // Optional note describing what changed
+  createdBy String?  // User who created this version
   createdAt DateTime @default(now())
-  
+
   @@unique([contentId, version])
+  @@index([contentId])
+  @@index([createdAt])
 }
 
 model Tag {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  contents  TagsOnContents[]
+  id       String           @id @default(uuid())
+  name     String           @unique
+  contents TagsOnContents[]
 }
 
 model TagsOnContents {
@@ -116,7 +177,7 @@ model TagsOnContents {
   contentId String
   tag       Tag     @relation(fields: [tagId], references: [id])
   tagId     String
-  
+
   @@id([contentId, tagId])
 }
 
@@ -129,7 +190,7 @@ model AuditLog {
   details   Json?
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([timestamp])
@@ -137,16 +198,80 @@ model AuditLog {
 
 // --- Auth: Refresh Token Support ---
 model RefreshToken {
-  id           String   @id @default(uuid())
-  hashedToken  String   @unique
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
-  revokedAt    DateTime?
+  id          String    @id @default(uuid())
+  hashedToken String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([expiresAt])
 }
 
+// --- Usage Tracking for Learning Content Management (FR-LCM-08) ---
+model ContentUsage {
+  id        String  @id @default(uuid())
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id])
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+
+  action    String
+  duration  Int?
+  progress  Float?
+  metadata  Json?
+  userAgent String? // User agent string
+  sessionId String? // Session identifier
+
+  createdAt DateTime @default(now())
+
+  @@index([contentId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([sessionId])
+}
+
+// --- File Management for MinIO Integration ---
+model File {
+  fileId     String   @id @default(uuid())
+  fileName   String // Original file name
+  filePath   String // MinIO object key/path
+  fileSize   Int // File size in bytes
+  fileType   String? // MIME type (e.g., "image/jpeg", "application/pdf")
+  uploadedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // MinIO specific fields
+  bucketName String @default("itsvn") // MinIO bucket name
+  objectKey  String // MinIO object key (same as filePath for compatibility)
+
+  // File metadata
+  checksum String? // File checksum for integrity
+  metadata Json? // Additional file metadata
+
+  // Relations
+  uploadedBy String? // User who uploaded the file
+  uploader   User?   @relation("UploadedFiles", fields: [uploadedBy], references: [id])
+
+  // Optional: Link to content if file is associated with content
+  contentId String?
+  content   Content? @relation("ContentFiles", fields: [contentId], references: [id])
+
+  // Soft delete support
+  deletedAt DateTime?
+  deletedBy String?
+  deleter   User?     @relation("DeletedFiles", fields: [deletedBy], references: [id])
+
+  @@unique([bucketName, objectKey]) // Ensure unique file path in bucket
+  @@index([fileName])
+  @@index([fileType])
+  @@index([uploadedBy])
+  @@index([contentId])
+  @@index([bucketName])
+  @@index([uploadedAt])
+  @@index([deletedAt])
+}
