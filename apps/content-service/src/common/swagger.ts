@@ -33,5 +33,9 @@ export function swaggerSetup(app: INestApplication, path: string): void {
     });
   });
 
-  SwaggerModule.setup(path, app, document);
+  SwaggerModule.setup(path, app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
 }

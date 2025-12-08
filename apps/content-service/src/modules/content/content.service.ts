@@ -6,11 +6,15 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@app/database';
 import { Prisma } from '@prisma/client';
-import { VersioningService, ContentSnapshot } from '../versioning/versioning.service';
+import {
+  VersioningService,
+  ContentSnapshot,
+} from '../versioning/versioning.service';
 import { TaggingService } from '../tagging/tagging.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
+import { QueryArchivedContentDto } from './dto/query-archived-content.dto';
 
 /**
  * ContentService - Handles all content CRUD operations with versioning
@@ -70,7 +74,9 @@ export class ContentService {
       }
 
       // Build snapshot for version 1
-      const snapshot = await this.versioning.buildSnapshotFromContent(content.id);
+      const snapshot = await this.versioning.buildSnapshotFromContent(
+        content.id,
+      );
 
       // Create version 1
       await this.versioning.createSnapshot(
@@ -97,7 +103,7 @@ export class ContentService {
       const where: Prisma.ContentWhereInput = {};
 
       if (query.type) where.contentType = query.type;
-      if (!query.includeArchived) where.isArchived = false;
+      if (query.includeArchived) where.isArchived = true;
       if (query.search) {
         where.title = { contains: query.search, mode: 'insensitive' };
       }
@@ -319,7 +325,7 @@ export class ContentService {
   /**
    * Get archived content list
    */
-  async getArchived(query: QueryContentDto) {
+  async getArchived(query: QueryArchivedContentDto) {
     return this.findAll({ ...query, includeArchived: true });
   }
 
@@ -342,4 +348,3 @@ export class ContentService {
     return { deleted: true, id };
   }
 }
-
