@@ -22,6 +22,7 @@ import { ContentService } from './content.service';
 import { CreateContentDto } from './dto/create-content.dto';
 import { UpdateContentDto } from './dto/update-content.dto';
 import { QueryContentDto } from './dto/query-content.dto';
+import { QueryArchivedContentDto } from './dto/query-archived-content.dto';
 import { JwtAuthGuard, CurrentUser } from '../auth';
 import type { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { PermissionsGuard, RequirePermissions } from '../authorization';
@@ -73,8 +74,8 @@ export class ContentController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'List archived content' })
   @ApiResponse({ status: 200, description: 'Returns archived content list' })
-  getArchived(@Query() query: QueryContentDto) {
-    return this.contentService.getArchived(query);
+  getArchived(@Query() query: QueryArchivedContentDto) {
+    return this.contentService.getArchived({ ...query });
   }
 
   /**
@@ -155,4 +156,3 @@ export class ContentController {
     return this.contentService.delete(id);
   }
 }
-
