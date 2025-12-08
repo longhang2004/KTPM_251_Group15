@@ -10,6 +10,8 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  ValidationPipe,
+  UsePipes,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -60,7 +62,9 @@ export class ContentController {
    */
   @Get()
   @ApiOperation({ summary: 'List all content with optional filters' })
+  @ApiBearerAuth('JWT-auth')
   @ApiResponse({ status: 200, description: 'Returns content list' })
+  @UsePipes(new ValidationPipe({ transform: true }))
   findAll(@Query() query: QueryContentDto) {
     return this.contentService.findAll(query);
   }

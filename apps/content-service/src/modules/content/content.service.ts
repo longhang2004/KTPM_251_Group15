@@ -98,12 +98,15 @@ export class ContentService {
   /**
    * Find all content with optional filters
    */
-  async findAll(query: QueryContentDto) {
+  async findAll(query: QueryContentDto, isArchived: boolean = false) {
     try {
       const where: Prisma.ContentWhereInput = {};
-
       if (query.type) where.contentType = query.type;
-      if (query.includeArchived) where.isArchived = true;
+      if (!isArchived) {
+        if (!query.includeArchived) where.isArchived = false;
+      } else {
+        where.isArchived = true;
+      }
       if (query.search) {
         where.title = { contains: query.search, mode: 'insensitive' };
       }
@@ -114,7 +117,6 @@ export class ContentService {
           },
         };
       }
-
       // Ensure offset and limit are numbers (query params come as strings)
       const skip = query.offset !== undefined ? Number(query.offset) : 0;
       const take = query.limit !== undefined ? Number(query.limit) : 20;
@@ -326,7 +328,7 @@ export class ContentService {
    * Get archived content list
    */
   async getArchived(query: QueryArchivedContentDto) {
-    return this.findAll({ ...query, includeArchived: true });
+    return this.findAll({ ...query }, true);
   }
 
   /**
