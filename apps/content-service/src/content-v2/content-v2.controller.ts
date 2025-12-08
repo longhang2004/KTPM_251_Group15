@@ -35,12 +35,12 @@ import {
   type CurrentUserData,
 } from '../common/decorators/current-user.decorator';
 // import { Public } from '../common/decorators/public.decorator';
-// import { PermissionsGuard } from '../common/authorization/permissions.guard';
+import { PermissionsGuard } from '../common/authorization/permissions.guard';
 import { RequirePermissions } from '../common/authorization/permissions.decorator';
 
 @ApiTags('Content v2')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('content-v2')
 export class ContentV2Controller {
   constructor(private readonly contentV2Service: ContentV2Service) {}
@@ -70,6 +70,7 @@ export class ContentV2Controller {
     return this.contentV2Service.createContent(createContentDto);
   }
 
+  @RequirePermissions('READ:CONTENT')
   @Get()
   @ApiOperation({
     summary: 'Get content list with advanced filtering',
@@ -88,6 +89,7 @@ export class ContentV2Controller {
     return this.contentV2Service.getContentList(queryDto);
   }
 
+  @RequirePermissions('READ:CONTENT')
   @Get(':id')
   @ApiOperation({
     summary: 'Get content by ID',
@@ -216,6 +218,7 @@ export class ContentV2Controller {
   /**
    * Get archived content list
    */
+  @RequirePermissions('READ:CONTENT')
   @Get('archived/list')
   @ApiOperation({
     summary: 'Get archived content list',

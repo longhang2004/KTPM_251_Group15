@@ -7,10 +7,11 @@ async function bootstrap() {
 
   // Prefix api
   app.setGlobalPrefix('api/v2');
-  // Setup Swagger documentation
-  swaggerSetup(app, 'docs');
+  // Setup Swagger documentation (before global prefix to exclude it)
+  swaggerSetup(app, 'api-docs');
   const port = process.env.CONTENT_SERVICE_PORT || 3002;
   await app.listen(port);
-  console.log('Content Service is running on: http://localhost:3002');
+  console.log(`🚀 Content Service running at: http://localhost:${port}`);
+  console.log(`📚 Swagger UI: http://localhost:${port}/api-docs`);
 }
 void bootstrap();
