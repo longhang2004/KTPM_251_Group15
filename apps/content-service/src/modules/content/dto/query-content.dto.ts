@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsBoolean, IsNumber, Min } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 
@@ -18,7 +24,10 @@ export class QueryContentDto {
   @IsString()
   tag?: string;
 
-  @ApiPropertyOptional({ description: 'Include archived content', default: false })
+  @ApiPropertyOptional({
+    description: 'Include archived content',
+    default: false,
+  })
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
@@ -31,11 +40,13 @@ export class QueryContentDto {
   @Min(0)
   offset?: number = 0;
 
-  @ApiPropertyOptional({ description: 'Number of items to return', default: 20 })
+  @ApiPropertyOptional({
+    description: 'Number of items to return',
+    default: 20,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
   limit?: number = 20;
 }
-
